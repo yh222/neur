@@ -78,19 +78,24 @@ public class ProjectSPA {
         data.defineInput(outputColumnin10);
         data.defineInput(outputColumnin11);
 
-        ColumnDefinition outputColumn1 = data.defineSourceColumn("ft1", 11,
-                ColumnType.continuous);
-        ColumnDefinition outputColumn2 = data.defineSourceColumn("ft2", 12,
-                ColumnType.continuous);
-        ColumnDefinition outputColumn3 = data.defineSourceColumn("ft3", 13,
-                ColumnType.continuous);
-        ColumnDefinition outputColumn4 = data.defineSourceColumn("ft4", 14,
-                ColumnType.continuous);
+//        ColumnDefinition outputColumn1 = data.defineSourceColumn("ft1", 11,
+//                ColumnType.continuous);
+//        ColumnDefinition outputColumn2 = data.defineSourceColumn("ft2", 12,
+//                ColumnType.continuous);
+//        ColumnDefinition outputColumn3 = data.defineSourceColumn("ft3", 13,
+//                ColumnType.continuous);
+//        ColumnDefinition outputColumn4 = data.defineSourceColumn("ft4", 14,
+//                ColumnType.continuous);
+        ColumnDefinition outputColumn5 = data.defineSourceColumn("fs1", 15,
+                ColumnType.nominal);
 
-        data.defineOutput(outputColumn1);
-        data.defineOutput(outputColumn2);
-        data.defineOutput(outputColumn3);
-        data.defineOutput(outputColumn4);
+
+//        data.defineOutput(outputColumn1);
+//        data.defineOutput(outputColumn2);
+//        data.defineOutput(outputColumn3);
+//        data.defineOutput(outputColumn4);
+        //data.defineOutput(outputColumn5);
+        data.defineSingleOutputOthersInput(outputColumn5);
 
         // Analyze the data, determine the min/max/mean/sd of every column.
         data.analyze();
@@ -108,7 +113,7 @@ public class ProjectSPA {
         model.selectTrainingType(data);
 
         // Use a 5-fold cross-validated train.  Return the best method found.
-        MLRegression bestMethod = (MLRegression) model.crossvalidate(5, true);
+        MLRegression bestMethod = (MLRegression) model.crossvalidate(3, true);
         System.out.println("Training error: " + EncogUtility.calculateRegressionError(bestMethod, model.getTrainingDataset()));
         System.out.println("Validation error: " + EncogUtility.calculateRegressionError(bestMethod, model.getValidationDataset()));
 
@@ -119,7 +124,7 @@ public class ProjectSPA {
         // Display the final model.
         System.out.println("Final model: " + bestMethod);
         ReadCSV csv = new ReadCSV(new File(inputFileName), false, CSVFormat.DECIMAL_POINT);
-        String[] line = new String[15];
+        String[] line = new String[11];
         MLData input = helper.allocateInputVector();
 
         while (csv.next()) {
@@ -135,17 +140,33 @@ public class ProjectSPA {
             line[8] = csv.get(8);
             line[9] = csv.get(9);
             line[10] = csv.get(10);
-            String correct = csv.get(11);
+            String d7r = csv.get(11);
+            String d14r = csv.get(12);
+            String d24r = csv.get(13);
+            String d49r = csv.get(14);
+            String d7fs = csv.get(15);
 
             helper.normalizeInputVector(line, input.getData(), false);
             MLData output = bestMethod.compute(input);
-            String irisChosen = helper.denormalizeOutputVectorToString(output)[0];
-
+            //String day7 = helper.denormalizeOutputVectorToString(output)[0];
+//            String day49 = helper.denormalizeOutputVectorToString(output)[3];
+            String day7fs = helper.denormalizeOutputVectorToString(output)[0];
             //result.append(Arrays.toString(line));
-            result.append(" -> predicted: ");
-            result.append(irisChosen);
+//            result.append(" -> 7d: ");
+//            result.append(day7);
+//            result.append("(correct: ");
+//            result.append(d7r);
+//            result.append(")");
+
+//            result.append(" -> 49d: ");
+//            result.append(day49);
+//            result.append("(correct: ");
+//            result.append(d49r);
+//            result.append(")");
+            result.append(" -> 7d fs: ");
+            result.append(day7fs);
             result.append("(correct: ");
-            result.append(correct);
+            result.append(d7fs);
             result.append(")");
 
             System.out.println(result.toString());

@@ -46,7 +46,9 @@ public class GlobalConfigs {
         FUTTREND_7d(11),
         FUTTREND_14d(12),
         FUTTREND_28d(13),
-        FUTTREND_49d(14);
+        FUTTREND_49d(14),
+        FUTSITU_7d(15);
+        
         private int value;
 
         private static final int size = TRAINIG_TYPES.values().length;

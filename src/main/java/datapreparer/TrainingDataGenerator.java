@@ -7,25 +7,13 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import core.GlobalConfigs;
 import core.GlobalConfigs.*;
-import static core.GlobalConfigs.DATE_FORMAT;
 import static core.GlobalConfigs.TRAINING_TYPES_SIZE;
-import org.encog.Encog;
-import org.encog.app.analyst.AnalystFileFormat;
-import org.encog.app.analyst.EncogAnalyst;
-import org.encog.app.analyst.commands.CmdReset;
-import org.encog.app.analyst.csv.normalize.AnalystNormalizeCSV;
-import org.encog.app.analyst.script.normalize.AnalystField;
-import org.encog.app.analyst.script.prop.ScriptProperties;
-import org.encog.app.analyst.wizard.AnalystWizard;
-import org.encog.util.csv.CSVFormat;
 
 /**
  * Generate training data by raw .csv data downloaded by CSVDownloader
@@ -34,14 +22,14 @@ import org.encog.util.csv.CSVFormat;
  */
 public class TrainingDataGenerator {
 
-    private String currentCode = "empty";
-
     static String RESOURCE_PATH = GlobalConfigs.DEFAULT_PATH + "resources\\";
     static ConcurrentHashMap<String, ArrayList> _trainingDataMap = new ConcurrentHashMap();
 
     public void generateTrainingData(boolean writeToFile, boolean writeToMomory, boolean normalize) {
         ArrayList<String> instruments = GlobalConfigs.INSTRUMENT_CODES;
         System.out.println("Starting to generate training data.");
+        //The code currently being processed
+        String currentCode = "empty";
         for (String code : instruments) {
             currentCode = code;
             //Get raw data organized by date for each instrument
@@ -150,11 +138,20 @@ public class TrainingDataGenerator {
         //Input data
         addRawTrends(date, rawDataMap, storageRow);
         addVelocities(date, rawDataMap, storageRow);
-        addSeasonOfYear(date, rawDataMap, storageRow, TRAINIG_TYPES.SEASON_YEAR.index());
+        addSeasonOfYear(date, storageRow, TRAINIG_TYPES.SEASON_YEAR.index());
 
         //Output data
         addCalssValues(date, rawDataMap, storageRow);
 
+    }
+
+    private void addCalssValues(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
+        addRawTrend(date, rawDataMap, storageRow, -7, 0, TRAINIG_TYPES.FUTTREND_7d.index());
+        addRawTrend(date, rawDataMap, storageRow, -14, 0, TRAINIG_TYPES.FUTTREND_14d.index());
+        addRawTrend(date, rawDataMap, storageRow, -24, 0, TRAINIG_TYPES.FUTTREND_28d.index());
+        addRawTrend(date, rawDataMap, storageRow, -49, 0, TRAINIG_TYPES.FUTTREND_49d.index());
+
+        addSituationClass(date, rawDataMap, storageRow, -7, 0, TRAINIG_TYPES.FUTSITU_7d.index(), 0.03);
     }
 
     private void addRawTrends(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
@@ -169,125 +166,21 @@ public class TrainingDataGenerator {
         addRawTrend(date, rawDataMap, storageRow, 72, 72, TRAINIG_TYPES.RAWTREND_12w.index());
     }
 
-    /*
-     * distance: distance from input date
-     */
-    private void addRawTrend(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow, int distance, int duration, int storageIndex) {
-
-        Calendar start_date = getUsableDate(date, rawDataMap, distance, duration, true);
-        Calendar end_date = getUsableDate(date, rawDataMap, distance, duration, false);
-        if (start_date == null || end_date == null) {
-            return; //remain 0
-        }
-
-        double trend_start = (double) rawDataMap.get(DATE_FORMAT.format(start_date.getTime()))[0];
-        double trend_end = (double) rawDataMap.get(DATE_FORMAT.format(end_date.getTime()))[3];
-        storageRow[storageIndex] = (trend_end - trend_start) / trend_start;
-
-    }
-
-    private Calendar getUsableDate(String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration, boolean isStart) {
-        try {
-            Calendar tempdate = Calendar.getInstance();
-            tempdate.setTime(DATE_FORMAT.parse(date));
-
-            int direction;
-            if (isStart) {
-                direction = 1;
-            } else {
-                tempdate.add(Calendar.DAY_OF_MONTH, duration);
-                direction = -1;
-            }
-
-            //Sundays and Saturdays will be ommited
-            tempdate.add(Calendar.DAY_OF_MONTH, distance * -1);
-            int count = 6;
-            while (rawDataMap.get(DATE_FORMAT.format(tempdate.getTime())) == null) {
-                tempdate.add(Calendar.DAY_OF_MONTH, direction);
-                if (--count < 0) {
-                    //System.out.println("Cannot find data on date:" + tempdate.getTime() + " for code: " + currentCode + "\n Initial date string: " + date + ", direction:" + direction);
-                    return null;
-                }
-            }
-            return tempdate;
-        } catch (ParseException ex) {
-            Logger.getLogger(TrainingDataGenerator.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return null;
-    }
-
-    /*
-     * Summer = 1, Spring = 0.5, Autumn = -0.5, Winter = -1
-     */
-    private void addSeasonOfYear(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow, int storageIndex) {
-        try {
-            Calendar tempdate = Calendar.getInstance();
-            tempdate.setTime(DATE_FORMAT.parse(date));
-            int month = tempdate.get(Calendar.MONTH);
-            if (month <= 2) {
-                storageRow[storageIndex] = "Spring";
-            } else if (month > 2 && month <= 5) {
-                storageRow[storageIndex] = "Summer";
-            } else if (month > 5 && month <= 8) {
-                storageRow[storageIndex] = "Autumn";
-            } else {
-                storageRow[storageIndex] = "Winter";
-            }
-        } catch (ParseException ex) {
-            Logger.getLogger(TrainingDataGenerator.class.getName()).log(Level.SEVERE, null, ex);
-        }
-
-    }
-
     private void addVelocities(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
         // 21 day (plus weekends) duration NASDAQ velocity
         addVelocity(date, rawDataMap, storageRow, 30, TRAINIG_TYPES.VELOCITY_0d.index());
     }
 
-    /*
-     * Velocity = volume of the date / Average volume
-     */
+    private void addSeasonOfYear(String date, Object[] storageRow, int storageIndex) {
+        storageRow[storageIndex] = StatCalculator.CalculateSeasonOfYear(date);
+    }
+
+    private void addRawTrend(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow, int distance, int duration, int storageIndex) {
+        storageRow[storageIndex] = StatCalculator.CalculateRawTrend(date, rawDataMap, distance, duration);
+    }
+
     private void addVelocity(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow, int duration, int storageIndex) {
-        Calendar start_date = getUsableDate(date, rawDataMap, duration, 0, true);
-        Calendar end_date = getUsableDate(date, rawDataMap, 0, 0, false);
-        if (start_date == null || end_date == null) {
-            return; //remain 0
-        }
-        //System.out.println("start: " + DATE_FORMAT.format(start_date.getTime()));
-        //System.out.println("end: " + DATE_FORMAT.format(end_date.getTime()));
-        int count = 0;
-        double sum_volume = 0;
-        //Calculate volume sum
-        for (int i = 0; i < duration; i++) {
-            if (rawDataMap.get(DATE_FORMAT.format(start_date.getTime())) != null) {
-                count++;
-                sum_volume += (double) rawDataMap.get(DATE_FORMAT.format(start_date.getTime()))[4];
-                //System.out.println(DATE_FORMAT.format(start_date.getTime()));
-            } else {
-                //System.out.println("cannot find: " + DATE_FORMAT.format(start_date.getTime()));
-            }
-            start_date.add(Calendar.DATE, 1);
-        }
-        double current_volume = (double) rawDataMap.get(DATE_FORMAT.format(end_date.getTime()))[4];
-        //System.out.println("current vol: " + current_volume + " sum vol: " + sum_volume + " count: " + count);
-        storageRow[storageIndex] = current_volume / (sum_volume / count);
-    }
-
-    private void addCalssValues(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
-        addRawTrend(date, rawDataMap, storageRow, -7, 0, TRAINIG_TYPES.FUTTREND_7d.index());
-        addRawTrend(date, rawDataMap, storageRow, -14, 0, TRAINIG_TYPES.FUTTREND_14d.index());
-        addRawTrend(date, rawDataMap, storageRow, -24, 0, TRAINIG_TYPES.FUTTREND_28d.index());
-        addRawTrend(date, rawDataMap, storageRow, -49, 0, TRAINIG_TYPES.FUTTREND_49d.index());
-    }
-
-    private boolean removeEarilyRows(String date, ConcurrentHashMap<String, Object[]> rawDataMap) {
-        //If this entry has no data value 31 days ago
-        Calendar tempdate = getUsableDate(date, rawDataMap, 31, 0, true);
-        if (tempdate == null) {
-            return true;
-        } else {
-            return false;
-        }
+        storageRow[storageIndex] = StatCalculator.CalcluateVelocity(date, rawDataMap, duration);
     }
 
     private boolean hasNull(Object[] row) {
@@ -297,6 +190,10 @@ public class TrainingDataGenerator {
             }
         }
         return false;
+    }
+
+    private void addSituationClass(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow, int distance, int duration, int storageIndex, double significance) {
+        storageRow[storageIndex] = StatCalculator.CalcluateSituation(date, rawDataMap, distance, duration, significance);
     }
 
 }
