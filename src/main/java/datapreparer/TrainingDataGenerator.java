@@ -13,7 +13,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import core.GlobalConfigs;
 import core.GlobalConfigs.*;
-import static core.GlobalConfigs.TRAINING_TYPES_SIZE;
+import static core.GlobalConfigs.CLASS_VALUES_SIZE;
+import static core.GlobalConfigs.TRAINIG_VALUES_SIZE;
+import static datapreparer.RawDataLoader.loadRawDataFromFile;
+import org.apache.commons.lang3.ArrayUtils;
 
 /**
  * Generate training data by raw .csv data downloaded by CSVDownloader
@@ -38,12 +41,16 @@ public class TrainingDataGenerator {
             //Start data processing
             for (String date : raw_data_map.keySet()) {
 
-                Object[] row = new Object[TRAINING_TYPES_SIZE];
-                processToTrainingItems(date, raw_data_map, row);
-                if (hasNull(row)) {
+                Object[] temp_training = new Object[TRAINIG_VALUES_SIZE];
+                generateTrainingValues(date, raw_data_map, temp_training);
+                Object[] temp_class = new Object[CLASS_VALUES_SIZE];
+                generateCalssValues(date, raw_data_map, temp_class);
+                //remove line with null value
+               //TODO: handle missing values
+                if (hasNull(temp_training) || hasNull(temp_class)) {
                     continue;
                 }
-                temp_data.add(row);
+                temp_data.add(ArrayUtils.addAll(temp_training, temp_class));
             }
 
             //Data processing end, start to save results.
@@ -101,74 +108,40 @@ public class TrainingDataGenerator {
         System.out.println("Training data successfully generated.");
     }
 
-    // Return a map of raw data array
-    // Data order(index start at 0!): 1, open; 2, high; 3, low; 4, close; 5, volume
-    // TODO: import data from different files to one map
-    private ConcurrentHashMap<String, Object[]> loadRawDataFromFile(String code) {
-        ConcurrentHashMap<String, Object[]> raw_data_map = new ConcurrentHashMap();
 
-        File folder = new File(RESOURCE_PATH + code);
-        if (!folder.isDirectory()) {
-            Logger.getLogger(TrainingDataGenerator.class.getName()).log(Level.WARNING, "Failed to find directory for: {0}", code);
-            return null;
-        }
-        File file = new File(RESOURCE_PATH + code + "//" + code + ".csv");
-        if (file.isFile()) {
-            try (BufferedReader reader = new BufferedReader(
-                    new FileReader(file))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    String[] parts = line.split(",");
-                    // Data order: 1, open; 2, high; 3, low; 4, close; 5, volume
-                    Object[] data = new Object[]{Double.parseDouble(parts[1]), Double.parseDouble(parts[2]), Double.parseDouble(parts[3]), Double.parseDouble(parts[4]), Double.parseDouble(parts[5])};
-                    raw_data_map.put(line.substring(0, 10), data);
-                }
-            } catch (Exception ex) {
-                Logger.getLogger(TrainingDataGenerator.class.getName()).log(Level.SEVERE, "Error when loading csv file for raw data.", ex);
-            }
-        } else {
-            Logger.getLogger(TrainingDataGenerator.class.getName()).log(Level.WARNING, "Data file for {0} does not exist.", code);
-            return null;
-        }
-        return raw_data_map;
-    }
 
     // storageRow will store new items created
-    private void processToTrainingItems(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
+    private void generateTrainingValues(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
         //Input data
         addRawTrends(date, rawDataMap, storageRow);
         addVelocities(date, rawDataMap, storageRow);
-        addSeasonOfYear(date, storageRow, TRAINIG_TYPES.SEASON_YEAR.index());
-
-        //Output data
-        addCalssValues(date, rawDataMap, storageRow);
-
+        addSeasonOfYear(date, storageRow, TRAINIG_VALUES.SEASON_YEAR.index());
     }
 
-    private void addCalssValues(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
-        addRawTrend(date, rawDataMap, storageRow, -7, 0, TRAINIG_TYPES.FUTTREND_7d.index());
-        addRawTrend(date, rawDataMap, storageRow, -14, 0, TRAINIG_TYPES.FUTTREND_14d.index());
-        addRawTrend(date, rawDataMap, storageRow, -24, 0, TRAINIG_TYPES.FUTTREND_28d.index());
-        addRawTrend(date, rawDataMap, storageRow, -49, 0, TRAINIG_TYPES.FUTTREND_49d.index());
+    private void generateCalssValues(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
+        addRawTrend(date, rawDataMap, storageRow, -7, 0, CLASS_VALUES.FUTTREND_7d.index());
+        addRawTrend(date, rawDataMap, storageRow, -14, 0, CLASS_VALUES.FUTTREND_14d.index());
+        addRawTrend(date, rawDataMap, storageRow, -24, 0, CLASS_VALUES.FUTTREND_28d.index());
+        addRawTrend(date, rawDataMap, storageRow, -49, 0, CLASS_VALUES.FUTTREND_49d.index());
 
-        addSituationClass(date, rawDataMap, storageRow, -7, 0, TRAINIG_TYPES.FUTSITU_7d.index(), 0.03);
+        addSituationClass(date, rawDataMap, storageRow, -7, 0, CLASS_VALUES.FUTSITU_7d.index(), 0.03);
     }
 
     private void addRawTrends(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
-        addRawTrend(date, rawDataMap, storageRow, 0, 0, TRAINIG_TYPES.RAWTREND_0d.index());
-        addRawTrend(date, rawDataMap, storageRow, 1, 0, TRAINIG_TYPES.RAWTREND_1d.index());
-        addRawTrend(date, rawDataMap, storageRow, 3, 3, TRAINIG_TYPES.RAWTREND_3d.index());
-        addRawTrend(date, rawDataMap, storageRow, 7, 7, TRAINIG_TYPES.RAWTREND_1w.index());
-        addRawTrend(date, rawDataMap, storageRow, 14, 14, TRAINIG_TYPES.RAWTREND_2w.index());
-        addRawTrend(date, rawDataMap, storageRow, 28, 28, TRAINIG_TYPES.RAWTREND_4w.index());
-        addRawTrend(date, rawDataMap, storageRow, 49, 49, TRAINIG_TYPES.RAWTREND_7w.index());
-        addRawTrend(date, rawDataMap, storageRow, 63, 63, TRAINIG_TYPES.RAWTREND_9w.index());
-        addRawTrend(date, rawDataMap, storageRow, 72, 72, TRAINIG_TYPES.RAWTREND_12w.index());
+        addRawTrend(date, rawDataMap, storageRow, 0, 0, TRAINIG_VALUES.RAWTREND_0d.index());
+        addRawTrend(date, rawDataMap, storageRow, 1, 0, TRAINIG_VALUES.RAWTREND_1d.index());
+        addRawTrend(date, rawDataMap, storageRow, 3, 3, TRAINIG_VALUES.RAWTREND_3d.index());
+        addRawTrend(date, rawDataMap, storageRow, 7, 7, TRAINIG_VALUES.RAWTREND_1w.index());
+        addRawTrend(date, rawDataMap, storageRow, 14, 14, TRAINIG_VALUES.RAWTREND_2w.index());
+        addRawTrend(date, rawDataMap, storageRow, 28, 28, TRAINIG_VALUES.RAWTREND_4w.index());
+        addRawTrend(date, rawDataMap, storageRow, 49, 49, TRAINIG_VALUES.RAWTREND_7w.index());
+        addRawTrend(date, rawDataMap, storageRow, 63, 63, TRAINIG_VALUES.RAWTREND_9w.index());
+        addRawTrend(date, rawDataMap, storageRow, 72, 72, TRAINIG_VALUES.RAWTREND_12w.index());
     }
 
     private void addVelocities(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
         // 21 day (plus weekends) duration NASDAQ velocity
-        addVelocity(date, rawDataMap, storageRow, 30, TRAINIG_TYPES.VELOCITY_0d.index());
+        addVelocity(date, rawDataMap, storageRow, 30, TRAINIG_VALUES.VELOCITY_0d.index());
     }
 
     private void addSeasonOfYear(String date, Object[] storageRow, int storageIndex) {

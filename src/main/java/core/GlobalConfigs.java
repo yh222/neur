@@ -25,12 +25,13 @@ public class GlobalConfigs {
 
     // Global Value:  project path
     public static final String DEFAULT_PATH = "D:\\Documents\\NetBeansProjects\\ProjectSPA\\";
-
-    public static final int TRAINING_TYPES_SIZE = TRAINIG_TYPES.values().length;
-
+    
     public static final ArrayList<String> INSTRUMENT_CODES = loadInstrumentCodes();
 
-    public static enum TRAINIG_TYPES {
+    public static final int TRAINIG_VALUES_SIZE = TRAINIG_VALUES.values().length;
+    public static final int CLASS_VALUES_SIZE = CLASS_VALUES.values().length;
+
+    public static enum TRAINIG_VALUES {
 
         RAWTREND_0d(0),
         RAWTREND_1d(1),
@@ -42,18 +43,12 @@ public class GlobalConfigs {
         RAWTREND_9w(7),
         RAWTREND_12w(8),
         SEASON_YEAR(9),
-        VELOCITY_0d(10),
-        FUTTREND_7d(11),
-        FUTTREND_14d(12),
-        FUTTREND_28d(13),
-        FUTTREND_49d(14),
-        FUTSITU_7d(15);
-        
+        VELOCITY_0d(10);
+
         private int value;
+        private static final int size = TRAINIG_VALUES.values().length;
 
-        private static final int size = TRAINIG_TYPES.values().length;
-
-        private TRAINIG_TYPES(int value) {
+        private TRAINIG_VALUES(int value) {
             this.value = value;
         }
 
@@ -64,7 +59,30 @@ public class GlobalConfigs {
         public int size() {
             return size;
         }
+    }
 
+    public static enum CLASS_VALUES {
+
+        FUTTREND_7d(0),
+        FUTTREND_14d(1),
+        FUTTREND_28d(2),
+        FUTTREND_49d(3),
+        FUTSITU_7d(4);
+        
+        private int value;
+        private static final int size = CLASS_VALUES.values().length;
+
+        private CLASS_VALUES(int value) {
+            this.value = value;
+        }
+
+        public int index() {
+            return this.value;
+        }
+
+        public int size() {
+            return size;
+        }
     }
 
     private static ArrayList<String> loadInstrumentCodes() {
