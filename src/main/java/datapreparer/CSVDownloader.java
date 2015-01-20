@@ -102,7 +102,7 @@ public class CSVDownloader {
         double high = Double.parseDouble(parts[2]) / split;
         double low = Double.parseDouble(parts[3]) / split;
         double close = Double.parseDouble(parts[4]) / split;
-        int vol = (int) (Double.parseDouble(parts[5]) / split);
+        double vol = Double.parseDouble(parts[5]) / split;
 
         return parts[0] + "," + open + "," + high + "," + low + "," + close + "," + vol + "," + parts[6];
     }

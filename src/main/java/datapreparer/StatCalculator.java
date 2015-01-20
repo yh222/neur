@@ -42,7 +42,7 @@ public class StatCalculator {
         Calendar start_date = getUsableDate(date, rawDataMap, distance, duration, true);
         Calendar end_date = getUsableDate(date, rawDataMap, distance, duration, false);
         if (start_date == null || end_date == null) {
-            return null; //remain 0
+            return null; 
         }
 
         double trend_start = (double) rawDataMap.get(DATE_FORMAT.format(start_date.getTime()))[0];
@@ -70,10 +70,12 @@ public class StatCalculator {
         } catch (ParseException ex) {
             Logger.getLogger(StatCalculator.class.getName()).log(Level.SEVERE, null, ex);
         }
-
         return null;
     }
 
+    /*
+    * get a date 
+    */
     private static Calendar getUsableDate(String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration, boolean isStart) {
         try {
             Calendar tempdate = Calendar.getInstance();
@@ -117,7 +119,7 @@ public class StatCalculator {
             return "Rise";
         } else if (raw_trend < 0) {
             return "Down";
-        } else {// return null if trend == 0, coz it should not happen
+        } else {// return null if trend == 0, coz it usually should not happen
             return null;
         }
     }

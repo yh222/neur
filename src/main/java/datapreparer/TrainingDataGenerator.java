@@ -1,9 +1,7 @@
 package datapreparer;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -27,6 +25,7 @@ public class TrainingDataGenerator {
 
     static String RESOURCE_PATH = GlobalConfigs.DEFAULT_PATH + "resources\\";
     static ConcurrentHashMap<String, ArrayList> _trainingDataMap = new ConcurrentHashMap();
+    private final double SIGNIFICANCE = 0.01;
 
     public void generateTrainingData(boolean writeToFile, boolean writeToMomory, boolean normalize) {
         ArrayList<String> instruments = GlobalConfigs.INSTRUMENT_CODES;
@@ -45,8 +44,9 @@ public class TrainingDataGenerator {
                 generateTrainingValues(date, raw_data_map, temp_training);
                 Object[] temp_class = new Object[CLASS_VALUES_SIZE];
                 generateCalssValues(date, raw_data_map, temp_class);
+
                 //remove line with null value
-               //TODO: handle missing values
+                //This is for bad entries, not for missing values. Missing values should be filled rather than leave null
                 if (hasNull(temp_training) || hasNull(temp_class)) {
                     continue;
                 }
@@ -108,8 +108,6 @@ public class TrainingDataGenerator {
         System.out.println("Training data successfully generated.");
     }
 
-
-
     // storageRow will store new items created
     private void generateTrainingValues(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
         //Input data
@@ -119,12 +117,12 @@ public class TrainingDataGenerator {
     }
 
     private void generateCalssValues(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
-        addRawTrend(date, rawDataMap, storageRow, -7, 0, CLASS_VALUES.FUTTREND_7d.index());
-        addRawTrend(date, rawDataMap, storageRow, -14, 0, CLASS_VALUES.FUTTREND_14d.index());
-        addRawTrend(date, rawDataMap, storageRow, -24, 0, CLASS_VALUES.FUTTREND_28d.index());
-        addRawTrend(date, rawDataMap, storageRow, -49, 0, CLASS_VALUES.FUTTREND_49d.index());
+        addRawTrend(date, rawDataMap, storageRow, 0, 6, CLASS_VALUES.FUTTREND_7d.index());
+        addRawTrend(date, rawDataMap, storageRow, 0, 13, CLASS_VALUES.FUTTREND_14d.index());
+        addRawTrend(date, rawDataMap, storageRow, 0, 27, CLASS_VALUES.FUTTREND_28d.index());
+        addRawTrend(date, rawDataMap, storageRow, 0, 48, CLASS_VALUES.FUTTREND_49d.index());
 
-        addSituationClass(date, rawDataMap, storageRow, -7, 0, CLASS_VALUES.FUTSITU_7d.index(), 0.03);
+        addSituationClass(date, rawDataMap, storageRow, -7, 0, CLASS_VALUES.FUTSITU_7d.index(), SIGNIFICANCE);
     }
 
     private void addRawTrends(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
