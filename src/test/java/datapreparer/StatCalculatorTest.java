@@ -1,5 +1,6 @@
 package datapreparer;
 
+import static datapreparer.StatCalculator.CalcluateSituation;
 import static datapreparer.StatCalculator.CalculateRawTrend;
 import static datapreparer.StatCalculator.CalcluateVelocity;
 
@@ -66,5 +67,12 @@ public class StatCalculatorTest {
         Object out = CalcluateVelocity("2005-12-24", raw_data_map, 3);
         System.out.println(out);
         assertTrue((double) out == 55528400.0 / ((53549000.0 + 54119000.0 + 53228400.0) / 3));//1.035356912895503
+    }
+
+    @Test
+    public void testCalcluateSituation() {
+        Object out = CalcluateSituation("2005-12-21", raw_data_map, 0, 2, 0.03);
+        System.out.println(out);
+        assertTrue( out.equals("Rise"));
     }
 }

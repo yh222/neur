@@ -23,7 +23,8 @@ public class ModelBenchmarker {
                     confg[2],
                     confg[3]);
             // Train the model
-            MLRegression temp_method = (MLRegression) temp_model.crossvalidate(10, true);
+            MLRegression temp_method = (MLRegression) temp_model.crossvalidate(5, true);
+
             // Get the benchmark score
             double error = EncogUtility.calculateRegressionError(temp_method, temp_model.getValidationDataset());
             System.out.println("Training error: " + EncogUtility.calculateRegressionError(temp_method, temp_model.getTrainingDataset()));
@@ -32,8 +33,8 @@ public class ModelBenchmarker {
 //                continue;
 //            }
             //Use maxError - error for normalization, to make better methods to have siginificantly higher weight in the future;
-            modelScoreMap.put(temp_method, maxError - error);
-            score_sum += maxError - error;
+            modelScoreMap.put(temp_method, (maxError - error));
+            score_sum += (maxError - error);
         }
 
         //Replace old error with normalized error. Sum of normalized errors will be 1
@@ -48,31 +49,17 @@ public class ModelBenchmarker {
             VersatileMLDataSet trainingData,
             String methodName,
             String methodArgs,
-            String trainingName,
-            String trainingArgs) {
+            String trainerName,
+            String trainerArgs) {
 
         // Create the model
         EncogModel model = new EncogModel(trainingData);
-        model.selectMethod(model.getDataset(), methodName, methodArgs, trainingName, trainingArgs);
+        model.selectMethod(model.getDataset(), methodName, methodArgs, trainerName, trainerArgs);
         model.getDataset().normalize();
-        // Hold back some data for a final validation.
-        // Shuffle the data into a random ordering.
+        
         model.holdBackValidation(0.3, true, 5548);
 
-        //model.selectTraining(model.getDataset(), trainingName, trainingArgs);
         return model;
     }
 }
 
-/*
- //MLMethodFactory methodFactory = new MLMethodFactory();
- //MLMethod method = methodFactory.create(methodName, methodArgs, trainingData.getInputSize(), trainingData.getIdealSize());
- // second, create the trainer
- //MLTrainFactory trainFactory = new MLTrainFactory();
- //MLTrain train = trainFactory.create(method, trainingData, trainingName, trainingArgs);
- // reset if improve is less than 1% over 5 cycles
-
- //        if (method instanceof MLResettable && !(train instanceof ManhattanPropagation)) {
- //            train.addStrategy(new RequiredImprovementStrategy(500));
- //        }
- */

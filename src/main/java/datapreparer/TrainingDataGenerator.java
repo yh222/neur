@@ -25,9 +25,9 @@ public class TrainingDataGenerator {
 
     static String RESOURCE_PATH = GlobalConfigs.DEFAULT_PATH + "resources\\";
     static ConcurrentHashMap<String, ArrayList> _trainingDataMap = new ConcurrentHashMap();
-    private final double SIGNIFICANCE = 0.01;
+    private final double SIGNIFICANCE = 0.05;
 
-    public void generateTrainingData(boolean writeToFile, boolean writeToMomory, boolean normalize) {
+    public void generateTrainingData(boolean writeToFile, boolean writeToMomory) {
         ArrayList<String> instruments = GlobalConfigs.INSTRUMENT_CODES;
         System.out.println("Starting to generate training data.");
         //The code currently being processed
@@ -73,36 +73,6 @@ public class TrainingDataGenerator {
                 } catch (IOException ex) {
                     Logger.getLogger(TrainingDataGenerator.class.getName()).log(Level.SEVERE, "Failed to write to training file for: " + code, ex);
                 }
-                if (normalize) {
-//                    File normalized_file = new File(RESOURCE_PATH + code + "//" + code + "_Training_Normalized.csv");
-//                    EncogAnalyst analyst = new EncogAnalyst();
-//                    //CmdReset reset=new CmdReset(analyst);
-//                    //reset.executeCommand(null);
-//                    AnalystWizard wizard = new AnalystWizard(analyst);
-//                    
-////                    wizard.setTargetField("13");
-////                    wizard.setTargetField("14");
-////                    wizard.setTargetField("15");
-//                    wizard.wizard(training_file, true, AnalystFileFormat.DECPNT_COMMA);
-//                    
-//                    System.out.println(analyst.getScript().getProperties());
-//                    for (AnalystField field : analyst.getScript().getNormalize().getNormalizedFields()) {
-//                        StringBuilder line = new StringBuilder();
-//                        line.append(field.getName());
-//                        line.append(",action=");
-//                        line.append(field.getAction());
-//                        line.append(",min=");
-//                        line.append(field.getActualLow());
-//                        line.append(",max=");
-//                        line.append(field.getActualHigh());
-//                        System.out.println(line.toString());
-//                    }
-//                    final AnalystNormalizeCSV norm = new AnalystNormalizeCSV();
-//                    norm.analyze(training_file, true, CSVFormat.ENGLISH, analyst);
-//                    norm.setProduceOutputHeaders(true);
-//                    norm.normalize(normalized_file);
-//                    Encog.getInstance().shutdown();
-                }
             }
         }
         System.out.println("Training data successfully generated.");
@@ -122,7 +92,7 @@ public class TrainingDataGenerator {
         addRawTrend(date, rawDataMap, storageRow, 0, 27, CLASS_VALUES.FUTTREND_28d.index());
         addRawTrend(date, rawDataMap, storageRow, 0, 48, CLASS_VALUES.FUTTREND_49d.index());
 
-        addSituationClass(date, rawDataMap, storageRow, -7, 0, CLASS_VALUES.FUTSITU_7d.index(), SIGNIFICANCE);
+        addSituationClass(date, rawDataMap, storageRow, 0, 6, CLASS_VALUES.FUTSITU_7d.index(), SIGNIFICANCE);
     }
 
     private void addRawTrends(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
