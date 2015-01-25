@@ -1,4 +1,4 @@
-package core;
+package model;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -7,7 +7,7 @@ import org.encog.ml.data.versatile.VersatileMLDataSet;
 import org.encog.ml.model.EncogModel;
 import org.encog.util.simple.EncogUtility;
 
-public class ModelBenchmarker {
+public class EncogModelBenchmarker {
 
     /**
      * @param maxError The threshold to filter models below the maximum error.
@@ -55,7 +55,7 @@ public class ModelBenchmarker {
         // Create the model
         EncogModel model = new EncogModel(trainingData);
         model.selectMethod(model.getDataset(), methodName, methodArgs, trainerName, trainerArgs);
-        model.getDataset().normalize();
+        //model.getDataset().normalize();
         
         model.holdBackValidation(0.3, true, 5548);
 

@@ -21,13 +21,14 @@ import org.apache.commons.lang3.ArrayUtils;
  *
  * Each data set stored as an ArrayList of double arrays
  */
-public class TrainingDataGenerator {
+public class TrainingFileGenerator {
 
     static String RESOURCE_PATH = GlobalConfigs.DEFAULT_PATH + "resources\\";
-    static ConcurrentHashMap<String, ArrayList> _trainingDataMap = new ConcurrentHashMap();
-    private final double SIGNIFICANCE = 0.05;
+    static ConcurrentHashMap<String, ArrayList> m_TrainingDataMap = new ConcurrentHashMap();
+    private final double SIGNIFICANCE_NORMAL = 0.05;
+    private final double SIGNIFICANCE_HIGH = 0.010;
 
-    public void generateTrainingData(boolean writeToFile, boolean writeToMomory) {
+    public void generateTrainingData(boolean writeToFile, boolean writeToMomory, boolean createHeaders) {
         ArrayList<String> instruments = GlobalConfigs.INSTRUMENT_CODES;
         System.out.println("Starting to generate training data.");
         //The code currently being processed
@@ -55,15 +56,24 @@ public class TrainingDataGenerator {
 
             //Data processing end, start to save results.
             if (writeToMomory) {
-                _trainingDataMap.put(code, temp_data);
+                m_TrainingDataMap.put(code, temp_data);
             }
             if (writeToFile) {
                 File training_file = new File(RESOURCE_PATH + code + "//" + code + "_Training.csv");
                 try (PrintWriter writer = new PrintWriter(new BufferedWriter(
                         new FileWriter(training_file, false)))) {
-                    //  writer.println("\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\",\"9\",\"10\",\"11\",\"12\",\"13\",\"14\",\"15\"");
+                    String temp = "";
+                    if (createHeaders) {
+                        for (TRAINIG_VALUES v : TRAINIG_VALUES.values()) {
+                            temp += v.toString() + ",";
+                        }
+                        for (CLASS_VALUES v : CLASS_VALUES.values()) {
+                            temp += v.toString() + ",";
+                        }
+                        writer.println(temp.substring(0, temp.length() - 1));
+                    }
                     for (Object[] row : temp_data) {
-                        String temp = "";
+                        temp = "";
                         for (Object item : row) {
                             temp += (item + ",");
                         }
@@ -71,7 +81,7 @@ public class TrainingDataGenerator {
                         writer.println(temp.substring(0, temp.length() - 1));
                     }
                 } catch (IOException ex) {
-                    Logger.getLogger(TrainingDataGenerator.class.getName()).log(Level.SEVERE, "Failed to write to training file for: " + code, ex);
+                    Logger.getLogger(TrainingFileGenerator.class.getName()).log(Level.SEVERE, "Failed to write to training file for: " + code, ex);
                 }
             }
         }
@@ -92,7 +102,11 @@ public class TrainingDataGenerator {
         addRawTrend(date, rawDataMap, storageRow, 0, 27, CLASS_VALUES.FUTTREND_28d.index());
         addRawTrend(date, rawDataMap, storageRow, 0, 48, CLASS_VALUES.FUTTREND_49d.index());
 
-        addSituationClass(date, rawDataMap, storageRow, 0, 6, CLASS_VALUES.FUTSITU_7d.index(), SIGNIFICANCE);
+        addSituationClass(date, rawDataMap, storageRow, 0, 6, CLASS_VALUES.FUTSITU_7d.index(), SIGNIFICANCE_NORMAL);
+        
+        
+        
+        
     }
 
     private void addRawTrends(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {

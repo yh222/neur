@@ -1,6 +1,6 @@
 package datapreparer;
 
-import static datapreparer.TrainingDataGenerator.RESOURCE_PATH;
+import static datapreparer.TrainingFileGenerator.RESOURCE_PATH;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -18,7 +18,7 @@ public class RawDataLoader {
 
         File folder = new File(RESOURCE_PATH + code);
         if (!folder.isDirectory()) {
-            Logger.getLogger(TrainingDataGenerator.class.getName()).log(Level.WARNING, "Failed to find directory for: {0}", code);
+            Logger.getLogger(TrainingFileGenerator.class.getName()).log(Level.WARNING, "Failed to find directory for: {0}", code);
             return null;
         }
         File file = new File(RESOURCE_PATH + code + "//" + code + ".csv");
@@ -33,10 +33,10 @@ public class RawDataLoader {
                     raw_data_map.put(line.substring(0, 10), data);
                 }
             } catch (Exception ex) {
-                Logger.getLogger(TrainingDataGenerator.class.getName()).log(Level.SEVERE, "Error when loading csv file for raw data.", ex);
+                Logger.getLogger(TrainingFileGenerator.class.getName()).log(Level.SEVERE, "Error when loading csv file for raw data.", ex);
             }
         } else {
-            Logger.getLogger(TrainingDataGenerator.class.getName()).log(Level.WARNING, "Data file for {0} does not exist.", code);
+            Logger.getLogger(TrainingFileGenerator.class.getName()).log(Level.WARNING, "Data file for {0} does not exist.", code);
             return null;
         }
         return raw_data_map;
