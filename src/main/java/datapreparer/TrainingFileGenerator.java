@@ -64,7 +64,7 @@ public class TrainingFileGenerator {
                         new FileWriter(training_file, false)))) {
                     String temp = "";
                     if (createHeaders) {
-                        for (TRAINIG_VALUES v : TRAINIG_VALUES.values()) {
+                        for (TRAINING_VALUES v : TRAINING_VALUES.values()) {
                             temp += v.toString() + ",";
                         }
                         for (CLASS_VALUES v : CLASS_VALUES.values()) {
@@ -93,7 +93,7 @@ public class TrainingFileGenerator {
         //Input data
         addRawTrends(date, rawDataMap, storageRow);
         addVelocities(date, rawDataMap, storageRow);
-        addSeasonOfYear(date, storageRow, TRAINIG_VALUES.SEASON_YEAR.index());
+        addSeasonOfYear(date, storageRow, TRAINING_VALUES.SEASON_YEAR.index());
     }
 
     private void generateCalssValues(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
@@ -110,20 +110,20 @@ public class TrainingFileGenerator {
     }
 
     private void addRawTrends(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
-        addRawTrend(date, rawDataMap, storageRow, 0, 0, TRAINIG_VALUES.RAWTREND_0d.index());
-        addRawTrend(date, rawDataMap, storageRow, 1, 0, TRAINIG_VALUES.RAWTREND_1d.index());
-        addRawTrend(date, rawDataMap, storageRow, 3, 3, TRAINIG_VALUES.RAWTREND_3d.index());
-        addRawTrend(date, rawDataMap, storageRow, 7, 7, TRAINIG_VALUES.RAWTREND_1w.index());
-        addRawTrend(date, rawDataMap, storageRow, 14, 14, TRAINIG_VALUES.RAWTREND_2w.index());
-        addRawTrend(date, rawDataMap, storageRow, 28, 28, TRAINIG_VALUES.RAWTREND_4w.index());
-        addRawTrend(date, rawDataMap, storageRow, 49, 49, TRAINIG_VALUES.RAWTREND_7w.index());
-        addRawTrend(date, rawDataMap, storageRow, 63, 63, TRAINIG_VALUES.RAWTREND_9w.index());
-        addRawTrend(date, rawDataMap, storageRow, 72, 72, TRAINIG_VALUES.RAWTREND_12w.index());
+        addRawTrend(date, rawDataMap, storageRow, 0, 0, TRAINING_VALUES.RAWTREND_0d.index());
+        addRawTrend(date, rawDataMap, storageRow, 1, 0, TRAINING_VALUES.RAWTREND_1d.index());
+        addRawTrend(date, rawDataMap, storageRow, 3, 3, TRAINING_VALUES.RAWTREND_3d.index());
+        addRawTrend(date, rawDataMap, storageRow, 7, 7, TRAINING_VALUES.RAWTREND_1w.index());
+        addRawTrend(date, rawDataMap, storageRow, 14, 14, TRAINING_VALUES.RAWTREND_2w.index());
+        addRawTrend(date, rawDataMap, storageRow, 28, 28, TRAINING_VALUES.RAWTREND_4w.index());
+        addRawTrend(date, rawDataMap, storageRow, 49, 49, TRAINING_VALUES.RAWTREND_7w.index());
+        addRawTrend(date, rawDataMap, storageRow, 63, 63, TRAINING_VALUES.RAWTREND_9w.index());
+        addRawTrend(date, rawDataMap, storageRow, 72, 72, TRAINING_VALUES.RAWTREND_12w.index());
     }
 
     private void addVelocities(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
         // 21 day (plus weekends) duration NASDAQ velocity
-        addVelocity(date, rawDataMap, storageRow, 30, TRAINIG_VALUES.VELOCITY_0d.index());
+        addVelocity(date, rawDataMap, storageRow, 30, TRAINING_VALUES.VELOCITY_0d.index());
     }
 
     private void addSeasonOfYear(String date, Object[] storageRow, int storageIndex) {

@@ -25,13 +25,13 @@ public class GlobalConfigs {
 
     // Global Value:  project path
     public static final String DEFAULT_PATH = "D:\\Documents\\NetBeansProjects\\ProjectSPA\\";
-    
+
     public static final ArrayList<String> INSTRUMENT_CODES = loadInstrumentCodes();
 
-    public static final int TRAINIG_VALUES_SIZE = TRAINIG_VALUES.values().length;
+    public static final int TRAINIG_VALUES_SIZE = TRAINING_VALUES.values().length;
     public static final int CLASS_VALUES_SIZE = CLASS_VALUES.values().length;
 
-    public static enum TRAINIG_VALUES {
+    public static enum TRAINING_VALUES {
 
         RAWTREND_0d(0),
         RAWTREND_1d(1),
@@ -46,18 +46,14 @@ public class GlobalConfigs {
         VELOCITY_0d(10);
 
         private int value;
-        private static final int size = TRAINIG_VALUES.values().length;
+        public static final int SIZE = TRAINING_VALUES.values().length;
 
-        private TRAINIG_VALUES(int value) {
+        private TRAINING_VALUES(int value) {
             this.value = value;
         }
 
         public int index() {
             return this.value;
-        }
-
-        public int size() {
-            return size;
         }
     }
 
@@ -68,9 +64,9 @@ public class GlobalConfigs {
         FUTTREND_28d(2),
         FUTTREND_49d(3),
         FUTSITU_7d(4);
-        
+
         private int value;
-        private static final int size = CLASS_VALUES.values().length;
+        public static final int SIZE = CLASS_VALUES.values().length;
 
         private CLASS_VALUES(int value) {
             this.value = value;
@@ -80,8 +76,8 @@ public class GlobalConfigs {
             return this.value;
         }
 
-        public int size() {
-            return size;
+        public int appendedIndex() {
+            return this.value + TRAINING_VALUES.values().length;
         }
     }
 
