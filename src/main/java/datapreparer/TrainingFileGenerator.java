@@ -1,5 +1,7 @@
 package datapreparer;
 
+import datapreparer.valuemaker.ClassValueMaker;
+import datapreparer.valuemaker.TrainingValueMaker;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -12,7 +14,7 @@ import java.util.logging.Logger;
 import core.GlobalConfigs;
 import core.GlobalConfigs.*;
 import static core.GlobalConfigs.CLASS_VALUES_SIZE;
-import static core.GlobalConfigs.TRAINIG_VALUES_SIZE;
+import static core.GlobalConfigs.TRAINING_VALUES_SIZE;
 import static datapreparer.RawDataLoader.loadRawDataFromFile;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -25,8 +27,6 @@ public class TrainingFileGenerator {
 
     static String RESOURCE_PATH = GlobalConfigs.DEFAULT_PATH + "resources\\";
     static ConcurrentHashMap<String, ArrayList> m_TrainingDataMap = new ConcurrentHashMap();
-    private final double SIGNIFICANCE_NORMAL = 0.05;
-    private final double SIGNIFICANCE_HIGH = 0.010;
 
     public void generateTrainingData(boolean writeToFile, boolean writeToMomory, boolean createHeaders) {
         ArrayList<String> instruments = GlobalConfigs.INSTRUMENT_CODES;
@@ -41,10 +41,10 @@ public class TrainingFileGenerator {
             //Start data processing
             for (String date : raw_data_map.keySet()) {
 
-                Object[] temp_training = new Object[TRAINIG_VALUES_SIZE];
-                generateTrainingValues(date, raw_data_map, temp_training);
+                Object[] temp_training = new Object[TRAINING_VALUES_SIZE];
+                TrainingValueMaker.generateTrainingValues(code, date, raw_data_map, temp_training);
                 Object[] temp_class = new Object[CLASS_VALUES_SIZE];
-                generateCalssValues(date, raw_data_map, temp_class);
+                ClassValueMaker.generateCalssValues(code, date, raw_data_map, temp_class);
 
                 //remove line with null value
                 //This is for bad entries, not for missing values. Missing values should be filled rather than leave null
@@ -88,56 +88,9 @@ public class TrainingFileGenerator {
         System.out.println("Training data successfully generated.");
     }
 
-    // storageRow will store new items created
-    private void generateTrainingValues(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
-        //Input data
-        addRawTrends(date, rawDataMap, storageRow);
-        addVelocities(date, rawDataMap, storageRow);
-        addSeasonOfYear(date, storageRow, TRAINING_VALUES.SEASON_YEAR.index());
-    }
-
-    private void generateCalssValues(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
-        addRawTrend(date, rawDataMap, storageRow, 0, 6, CLASS_VALUES.FUTTREND_7d.index());
-        addRawTrend(date, rawDataMap, storageRow, 0, 13, CLASS_VALUES.FUTTREND_14d.index());
-        addRawTrend(date, rawDataMap, storageRow, 0, 27, CLASS_VALUES.FUTTREND_28d.index());
-        addRawTrend(date, rawDataMap, storageRow, 0, 48, CLASS_VALUES.FUTTREND_49d.index());
-
-        addSituationClass(date, rawDataMap, storageRow, 0, 6, CLASS_VALUES.FUTSITU_7d.index(), SIGNIFICANCE_NORMAL);
-        
-        
-        
-        
-    }
-
-    private void addRawTrends(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
-        addRawTrend(date, rawDataMap, storageRow, 0, 0, TRAINING_VALUES.RAWTREND_0d.index());
-        addRawTrend(date, rawDataMap, storageRow, 1, 0, TRAINING_VALUES.RAWTREND_1d.index());
-        addRawTrend(date, rawDataMap, storageRow, 3, 3, TRAINING_VALUES.RAWTREND_3d.index());
-        addRawTrend(date, rawDataMap, storageRow, 7, 7, TRAINING_VALUES.RAWTREND_1w.index());
-        addRawTrend(date, rawDataMap, storageRow, 14, 14, TRAINING_VALUES.RAWTREND_2w.index());
-        addRawTrend(date, rawDataMap, storageRow, 28, 28, TRAINING_VALUES.RAWTREND_4w.index());
-        addRawTrend(date, rawDataMap, storageRow, 49, 49, TRAINING_VALUES.RAWTREND_7w.index());
-        addRawTrend(date, rawDataMap, storageRow, 63, 63, TRAINING_VALUES.RAWTREND_9w.index());
-        addRawTrend(date, rawDataMap, storageRow, 72, 72, TRAINING_VALUES.RAWTREND_12w.index());
-    }
-
-    private void addVelocities(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
-        // 21 day (plus weekends) duration NASDAQ velocity
-        addVelocity(date, rawDataMap, storageRow, 30, TRAINING_VALUES.VELOCITY_0d.index());
-    }
-
-    private void addSeasonOfYear(String date, Object[] storageRow, int storageIndex) {
-        storageRow[storageIndex] = StatCalculator.CalculateSeasonOfYear(date);
-    }
-
-    private void addRawTrend(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow, int distance, int duration, int storageIndex) {
-        storageRow[storageIndex] = StatCalculator.CalculateRawTrend(date, rawDataMap, distance, duration);
-    }
-
-    private void addVelocity(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow, int duration, int storageIndex) {
-        storageRow[storageIndex] = StatCalculator.CalcluateVelocity(date, rawDataMap, duration);
-    }
-
+    /*
+     * Check if a data row contains null value
+     */
     private boolean hasNull(Object[] row) {
         for (Object o : row) {
             if (o == null) {
@@ -146,9 +99,4 @@ public class TrainingFileGenerator {
         }
         return false;
     }
-
-    private void addSituationClass(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow, int distance, int duration, int storageIndex, double significance) {
-        storageRow[storageIndex] = StatCalculator.CalcluateSituation(date, rawDataMap, distance, duration, significance);
-    }
-
 }

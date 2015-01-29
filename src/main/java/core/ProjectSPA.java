@@ -16,18 +16,17 @@ public class ProjectSPA {
         TrainingFileGenerator tdg = new TrainingFileGenerator();
         tdg.generateTrainingData(true, true, true);
 
-        String trainingFileName = DEFAULT_PATH + "//resources//AAPL//AAPL_Training.csv";
-
-        WekaModelBenchamrker mk = new WekaModelBenchamrker();
+        String trainingFileName = DEFAULT_PATH + "//resources//MSFT//MSFT_Training.csv";
 
         ArrayList<String> classifierNames = new ArrayList();
-        classifierNames.add("weka.classifiers.trees.J48");
         ArrayList<String[]> optionsList = new ArrayList();
-        optionsList.add(new String[]{"-C","0.25","-M","2"});
+        classifierNames.add("weka.classifiers.trees.J48");
+        optionsList.add(new String[]{"-C", "0.25", "-M", "2"});
+
         
         int num_folds = 10;
 
-        mk.benchMarkModels(trainingFileName, classifierNames, optionsList, CLASS_VALUES.FUTSITU_7d.appendedIndex(), num_folds);
+        WekaModelBenchamrker.benchmarkByClasses(trainingFileName, classifierNames, optionsList, num_folds);
 
     }
 

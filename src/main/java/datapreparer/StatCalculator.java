@@ -1,6 +1,10 @@
 package datapreparer;
 
+import core.GlobalConfigs;
 import static core.GlobalConfigs.DATE_FORMAT;
+import static core.GlobalConfigs.getSignificanceDaily;
+import static core.GlobalConfigs.getSignificanceNormal;
+import java.text.DateFormatSymbols;
 import java.text.ParseException;
 import java.util.Calendar;
 import java.util.concurrent.ConcurrentHashMap;
@@ -9,19 +13,22 @@ import java.util.logging.Logger;
 
 public class StatCalculator {
 
+//    protected static final double SIGNIFICANCE_NORMAL = GlobalConfigs.getSignificanceNormal(null);
+//    protected static final double SIGNIFICANCE_DAILY = GlobalConfigs.SIGNIFICANCE_DAILY;
     /*
      * Velocity = volume of the date / Average volume
      */
     public static Object CalcluateVelocity(String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance) {
         //Duration should be always zero, as non-directly past velocity seems not revelant.
-        Calendar start_date = getUsableDate(date, rawDataMap, distance, 0, true);
-        Calendar end_date = getUsableDate(date, rawDataMap, 0, 0, false);
+        Calendar start_date = getUsableDate(date, rawDataMap, distance, 0, true, true);
+        Calendar end_date = getUsableDate(date, rawDataMap, 0, 0, false, true);
         if (start_date == null || end_date == null) {
             return null; //remain 0
         }
         //System.out.println("start: " + DATE_FORMAT.format(start_date.getTime()));
         //System.out.println("end: " + DATE_FORMAT.format(end_date.getTime()));
         int count = 0;
+        int buffer = (int) (distance * 0.4) + 3;
         double sum_volume = 0;
         //Calculate volume sum
         for (int i = 0; i < distance; i++) {
@@ -30,6 +37,10 @@ public class StatCalculator {
                 sum_volume += (double) rawDataMap.get(DATE_FORMAT.format(start_date.getTime()))[4];
                 //System.out.println(DATE_FORMAT.format(start_date.getTime()));
             } else {
+                i--;
+                if (--buffer == 0) {
+                    break;
+                }
                 //System.out.println("cannot find: " + DATE_FORMAT.format(start_date.getTime()));
             }
             start_date.add(Calendar.DATE, 1);
@@ -39,15 +50,80 @@ public class StatCalculator {
     }
 
     public static Object CalculateRawTrend(String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration) {
-        Calendar start_date = getUsableDate(date, rawDataMap, distance, duration, true);
-        Calendar end_date = getUsableDate(date, rawDataMap, distance, duration, false);
+        Calendar start_date = getUsableDate(date, rawDataMap, distance, duration, true, false);
+        Calendar end_date = getUsableDate(date, rawDataMap, distance, duration, false, false);
         if (start_date == null || end_date == null) {
-            return null; 
+            return null;
         }
 
         double trend_start = (double) rawDataMap.get(DATE_FORMAT.format(start_date.getTime()))[0];
         double trend_end = (double) rawDataMap.get(DATE_FORMAT.format(end_date.getTime()))[3];
         return (trend_end - trend_start) / trend_start;
+    }
+
+    public static Object CalculateClusteredTrend(String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration, boolean getHighest) {
+        Calendar start_date = getUsableDate(date, rawDataMap, distance, duration, true, false);
+        Calendar end_date = getUsableDate(date, rawDataMap, distance, duration, false, false);
+        if (start_date == null || end_date == null) {
+            return null;
+        }
+        double start_price = (double) rawDataMap.get(DATE_FORMAT.format(start_date.getTime()))[0];
+        double max = Double.NEGATIVE_INFINITY;
+        double min = Double.POSITIVE_INFINITY;
+        //Set end date to monday of the week
+        int dayofWeek = end_date.get(Calendar.DAY_OF_WEEK);
+        end_date.add(Calendar.DATE, -1 * (dayofWeek - Calendar.MONDAY));
+        for (int i = 0; i < 5; i++) {
+            if (rawDataMap.get(DATE_FORMAT.format(end_date.getTime())) != null) {
+                double templow = (double) rawDataMap.get(DATE_FORMAT.format(end_date.getTime()))[2];
+                double temphigh = (double) rawDataMap.get(DATE_FORMAT.format(end_date.getTime()))[1];
+                if (max < temphigh) {
+                    max = temphigh;
+                }
+                if (min > templow) {
+                    min = templow;
+                }
+            }
+            end_date.add(Calendar.DATE, 1);
+        }
+        if (getHighest) {
+            return (max - start_price) / start_price;
+        } else {
+            return (min - start_price) / start_price;
+        }
+    }
+
+    /*
+     * Calculate lowest drop or highest rise inside a period
+     */
+    public static Object CalculateExtremeInPeriod(String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration, boolean getHighest) {
+        Calendar start_date = getUsableDate(date, rawDataMap, distance, duration, true, false);
+        Calendar end_date = getUsableDate(date, rawDataMap, distance, duration, false, false);
+        if (start_date == null || end_date == null) {
+            return null;
+        }
+        double start_price = (double) rawDataMap.get(DATE_FORMAT.format(start_date.getTime()))[0];
+        double max = Double.NEGATIVE_INFINITY;
+        double min = Double.POSITIVE_INFINITY;
+
+        while (!start_date.after(end_date)) {
+            if (rawDataMap.get(DATE_FORMAT.format(start_date.getTime())) != null) {
+                double templow = (double) rawDataMap.get(DATE_FORMAT.format(start_date.getTime()))[2];
+                double temphigh = (double) rawDataMap.get(DATE_FORMAT.format(start_date.getTime()))[1];
+                if (max < temphigh) {
+                    max = temphigh;
+                }
+                if (min > templow) {
+                    min = templow;
+                }
+            }
+            start_date.add(Calendar.DAY_OF_MONTH, 1);
+        }
+        if (getHighest) {
+            return (max - start_price) / start_price;
+        } else {
+            return (min - start_price) / start_price;
+        }
     }
 
     /*
@@ -73,54 +149,272 @@ public class StatCalculator {
         return null;
     }
 
+    public static String CalcluateNominalRawTrend(String code, String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration) {
+        Object rt = CalculateRawTrend(date, rawDataMap, distance, duration);
+        if (rt == null) {
+            return null;
+        }
+        return getHighLowClass(code, (double) rt);
+    }
+
+    public static String CalculateNominalExtreme(String code, String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration, boolean getHighest) {
+        Object ext = CalculateExtremeInPeriod(date, rawDataMap, distance, duration, getHighest);
+        if (ext == null) {
+            return null;
+        }
+        return getHighLowClass(code, (double) ext);
+    }
+
+    public static String CalculateNominalCluTrend(String code, String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration, boolean getHighest) {
+        Object ext = CalculateClusteredTrend(date, rawDataMap, distance, duration, getHighest);
+        if (ext == null) {
+            return null;
+        }
+        return getHighLowClass(code, (double) ext);
+    }
+
+    public static void CountCandleChartUnits(String code, String date, ConcurrentHashMap<String, Object[]> rawDataMap, int duration, Object[] dataToInsert, int insertIndex) {
+        Calendar start_date = getUsableDate(date, rawDataMap, duration, duration, true, true);
+        Calendar end_date = getUsableDate(date, rawDataMap, duration, duration, false, true);
+        if (start_date == null || end_date == null) {
+            return;
+        }
+        //int lw = 0, lb = 0, tt = 0, ut = 0, dt = 0, sw = 0, sb = 0, rw = 0, rb = 0;
+        int[] tempResult = new int[m_READS.SIZE];
+        m_READS read;
+        while (!start_date.after(end_date)) {
+            Object[] rawData = rawDataMap.get(DATE_FORMAT.format(start_date.getTime()));
+            if (rawData != null) {
+                read = readCandleChartUnit(code, rawData);
+                tempResult[read.ordinal()]++;
+            }
+            start_date.add(Calendar.DAY_OF_MONTH, 1);
+        }
+        //Insert results into output array
+        for (int i = 0; i < m_READS.SIZE; i++) {
+            dataToInsert[insertIndex + i] = tempResult[i];
+        }
+    }
+
+    public static String CalculateCandleUnitForDay(String code, String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance) {
+        try {
+            Calendar tempdate = Calendar.getInstance();
+            tempdate.setTime(DATE_FORMAT.parse(date));
+            //If find 10 unusable dates, return null
+            int buffer_count = 10;
+            for (int i = distance; i > 0; i--) {
+                tempdate.add(Calendar.DAY_OF_MONTH, -1);
+                if (rawDataMap.get(DATE_FORMAT.format(tempdate.getTime())) == null) {
+                    i++;
+                    if (--buffer_count == 0) {
+                        break;
+                    }
+                }
+            }
+
+            Object[] rawData = rawDataMap.get(DATE_FORMAT.format(tempdate.getTime()));
+            m_READS read;
+            if (rawData != null) {
+                read = readCandleChartUnit(code, rawData);
+            } else {
+                //System.err.println("CalculateCandleUnitForDay outputed null");
+                return null;
+            }
+            return read.name();
+        } catch (ParseException ex) {
+            Logger.getLogger(StatCalculator.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        System.err.println("CalculateCandleUnitForDay outputed null");
+        return null;
+    }
+
     /*
-    * get a date 
-    */
-    private static Calendar getUsableDate(String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration, boolean isStart) {
+     * get a date 
+     */
+    public static String CalculateDayOfWeek(String date) {
+        try {
+            Calendar tempdate = Calendar.getInstance();
+            tempdate.setTime(DATE_FORMAT.parse(date));
+            String[] namesOfDays = DateFormatSymbols.getInstance().getShortWeekdays();
+            return namesOfDays[tempdate.get(Calendar.DAY_OF_WEEK)];
+        } catch (ParseException ex) {
+            Logger.getLogger(StatCalculator.class.getName()).log(Level.SEVERE, null, ex);
+            return null;
+        }
+    }
+
+    public static Calendar getUsableDate(String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration, boolean isStart, boolean useEffevtiveDay) {
         try {
             Calendar tempdate = Calendar.getInstance();
             tempdate.setTime(DATE_FORMAT.parse(date));
 
-            int direction;
+            int direction, count;
             if (isStart) {
-                direction = 1;
+                direction = distance <= 0 ? 1 : -1;
+                count = Math.abs(distance);
             } else {
-                tempdate.add(Calendar.DAY_OF_MONTH, duration);
-                direction = -1;
+                direction = duration - distance < 0 ? -1 : 1;
+                count = Math.abs(duration - distance);
             }
 
-            //Sundays and Saturdays will be ommited
-            tempdate.add(Calendar.DAY_OF_MONTH, distance * -1);
-            int count = 6;
-            while (rawDataMap.get(DATE_FORMAT.format(tempdate.getTime())) == null) {
-                tempdate.add(Calendar.DAY_OF_MONTH, direction);
-                if (--count < 0) {
-                    //System.out.println("Cannot find data on date:" + tempdate.getTime() + " for code: " + currentCode + "\n Initial date string: " + date + ", direction:" + direction);
-                    return null;
+            int buffer = (int) (distance * 0.6) + 3;
+            for (int i = 0; i <= count; i++) {
+                //Keep going forward until buffer depleted 
+                if (buffer == 0) {
+                    break;
                 }
+                //Check validity when count meet
+                if (i == count) {
+                    if (rawDataMap.get(DATE_FORMAT.format(tempdate.getTime())) == null) {
+                        buffer--;
+                        i--;
+                    } else {
+                        return tempdate;
+                    }
+                }
+                // Need to check everyday if going to use effective days only
+                if (useEffevtiveDay) {
+                    if (rawDataMap.get(DATE_FORMAT.format(tempdate.getTime())) == null) {
+                        buffer--;
+                        i--;
+                    }
+                }
+                tempdate.add(Calendar.DAY_OF_MONTH, direction);
             }
-            return tempdate;
+
+            return null;
         } catch (ParseException ex) {
             Logger.getLogger(StatCalculator.class.getName()).log(Level.SEVERE, null, ex);
         }
         return null;
     }
 
-    public static String CalcluateSituation(String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration, double significance) {
-        Object rt = CalculateRawTrend(date, rawDataMap, distance, duration);
-        if (rt == null) {
-            return null;
-        }
-        double raw_trend = (double) rt;
+    public static String getHighLowClass(String code, double in) {
+        double sig = getSignificanceNormal(code);
 
-        if (Math.abs(raw_trend) < significance) {
+        if (Math.abs(in) < sig) {
+            // (-s...s)
             return "Stay";
-        } else if (raw_trend > 0) {
-            return "Rise";
-        } else if (raw_trend < 0) {
-            return "Down";
-        } else {// return null if trend == 0, coz it usually should not happen
+        } else if (in >= 2 * sig && in < 3 * sig) {
+            // [2s...3s)
+            return "High";
+        } else if (in <= - 2 * sig && in > -3 * sig) {
+            // (-3s...-2s]
+            return "Low";
+        } else if (in >= sig && in < 2 * sig) {
+            // [s...2s)
+            return "Little_High";
+        } else if (in <= -1 * sig && in > - 2 * sig) {
+            // (-2s...-s]
+            return "Little_Low";
+        } else if (in >= 3 * sig) {
+            // [3s...inf)
+            return "Very_High";
+        } else if (in <= - 3 * sig) {
+            // (-inf...-3s]
+            return "Very_Low";
+        } else {// return null if extreme == 0, coz it usually should not happen
             return null;
         }
+
     }
+
+    private enum m_READS {
+
+        GreatW,
+        GreadB,
+        LongW,
+        LongB,
+        ShortW,
+        ShortB,
+        ShortWTT,
+        ShortBTT,
+        ShortWU,
+        ShortWD,
+        ShortBU,
+        ShortBD,
+        StarW,
+        StarB,
+        StarWTT,
+        StarBTT,
+        StarWU,
+        StarWD,
+        StarBU,
+        StarBD;
+
+        public static final int SIZE = m_READS.values().length;
+    }
+
+    private static m_READS readCandleChartUnit(String code, Object[] rawData) {
+        double sig = getSignificanceDaily(code);
+        double open = (double) rawData[0];
+        double high = (double) rawData[1];
+        double low = (double) rawData[2];
+        double close = (double) rawData[3];
+        double avg = (open + close) / 2;
+        double trend = (close - open) / avg;
+        double uptail = (high - open) / avg;
+        double downtail = (close - low) / avg;
+        double tail = 1 * sig;
+
+        //Greats, If body is significantly large
+        if (trend > 3.0 * sig) {
+            return m_READS.GreatW;
+        } else if (trend < -3.0 * sig) {
+            return m_READS.GreadB;
+        }
+        //Longs
+        if (trend > 2.0 * sig) {
+            return m_READS.LongW;
+        } else if (trend < -2.0 * sig) {
+            return m_READS.LongB;
+        }
+
+        //Shorts
+        if (trend > 0.6 * sig) {
+            if (uptail > sig && downtail > tail) {
+                return m_READS.ShortWTT;
+            } else if (uptail > tail) {
+                return m_READS.ShortWU;
+            } else if (downtail > tail) {
+                return m_READS.ShortWD;
+            } else {
+                return m_READS.ShortW;
+            }
+        } else if (trend < -0.6 * sig) {
+            if (uptail > sig && downtail > tail) {
+                return m_READS.ShortBTT;
+            } else if (uptail > tail) {
+                return m_READS.ShortBU;
+            } else if (downtail > tail) {
+                return m_READS.ShortBD;
+            } else {
+                return m_READS.ShortB;
+            }
+        }
+        //Stars
+        if (trend > 0) {
+            if (uptail > sig && downtail > tail) {
+                return m_READS.StarWTT;
+            } else if (uptail > tail) {
+                return m_READS.StarWU;
+            } else if (downtail > tail) {
+                return m_READS.StarWD;
+            } else {
+                return m_READS.StarW;
+            }
+        } else if (trend <= 0) {
+            if (uptail > sig && downtail > tail) {
+                return m_READS.StarBTT;
+            } else if (uptail > tail) {
+                return m_READS.StarBU;
+            } else if (downtail > tail) {
+                return m_READS.StarBD;
+            } else {
+                return m_READS.StarB;
+            }
+        }
+        return null;
+    }
+
 }
