@@ -1,8 +1,8 @@
 package datapreparer.valuemaker;
 
 import core.GlobalConfigs;
-import datapreparer.StatCalculator;
-import static datapreparer.valuemaker.TrainingValueMaker.WEEK_MULTIPIER;
+import static core.GlobalConfigs.WEEK_MULTIPIER;
+import calculator.StatCalculator;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ClassValueMaker {
@@ -13,13 +13,13 @@ public class ClassValueMaker {
     }
 
     private static void addExtremeClass(String code, String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
-        int index = GlobalConfigs.CLASS_VALUES.FUTHIGHEST_7d.ordinal();
+        int index = GlobalConfigs.CLASS_VALUES.FHighest7d.ordinal();
         int days;
         for (int i = 0; i < WEEK_MULTIPIER.length; i++) {
             days = WEEK_MULTIPIER[i] * 7;
             storageRow[index + i] = StatCalculator.CalculateNominalExtreme(code, date, rawDataMap, 0, days - 1, true);
         }
-        index = GlobalConfigs.CLASS_VALUES.FUTLOWEST_7d.ordinal();
+        index = GlobalConfigs.CLASS_VALUES.FLowest7d.ordinal();
         for (int i = 0; i < WEEK_MULTIPIER.length; i++) {
             days = WEEK_MULTIPIER[i] * 7;
             storageRow[index + i] = StatCalculator.CalculateNominalExtreme(code, date, rawDataMap, 0, days - 1, false);
@@ -27,14 +27,14 @@ public class ClassValueMaker {
     }
 
     private static void addClusteredTrends(String code, String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
-        int index = GlobalConfigs.CLASS_VALUES.FUTCLUTRENDHIGH_7d.ordinal();
+        int index = GlobalConfigs.CLASS_VALUES.FCTrdHigh7d.ordinal();
         int days;
         for (int i = 0; i < WEEK_MULTIPIER.length; i++) {
             days = WEEK_MULTIPIER[i] * 7;
             storageRow[index + i] = StatCalculator.CalculateNominalCluTrend(code, date, rawDataMap, 0, days - 1, true);
         }
 
-        index = GlobalConfigs.CLASS_VALUES.FUTCLUTRENDLOW_7d.ordinal();
+        index = GlobalConfigs.CLASS_VALUES.FCTrdLow7d.ordinal();
         for (int i = 0; i < WEEK_MULTIPIER.length; i++) {
             days = WEEK_MULTIPIER[i] * 7;
             storageRow[index + i] = StatCalculator.CalculateNominalCluTrend(code, date, rawDataMap, 0, days - 1, false);

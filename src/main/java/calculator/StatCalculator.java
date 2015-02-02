@@ -1,13 +1,17 @@
-package datapreparer;
+package calculator;
 
-import core.GlobalConfigs;
 import static core.GlobalConfigs.DATE_FORMAT;
+import static core.GlobalConfigs.DEFAULT_START_DATE;
 import static core.GlobalConfigs.getSignificanceDaily;
 import static core.GlobalConfigs.getSignificanceNormal;
 import java.text.DateFormatSymbols;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -179,7 +183,6 @@ public class StatCalculator {
         if (start_date == null || end_date == null) {
             return;
         }
-        //int lw = 0, lb = 0, tt = 0, ut = 0, dt = 0, sw = 0, sb = 0, rw = 0, rb = 0;
         int[] tempResult = new int[m_READS.SIZE];
         m_READS read;
         while (!start_date.after(end_date)) {
@@ -201,7 +204,7 @@ public class StatCalculator {
             Calendar tempdate = Calendar.getInstance();
             tempdate.setTime(DATE_FORMAT.parse(date));
             //If find 10 unusable dates, return null
-            int buffer_count = 10;
+            int buffer_count = (int) (distance * 0.6) + 3;
             for (int i = distance; i > 0; i--) {
                 tempdate.add(Calendar.DAY_OF_MONTH, -1);
                 if (rawDataMap.get(DATE_FORMAT.format(tempdate.getTime())) == null) {
@@ -319,6 +322,57 @@ public class StatCalculator {
 
     }
 
+    public static double CalculateDividentAmt(String date, ArrayList<String[]> dividendData) {
+        double r = 0.0;
+        try {
+            if (dividendData != null) {
+                Calendar inputDate = Calendar.getInstance();
+                Calendar tempDate = Calendar.getInstance();
+                inputDate.setTime(DATE_FORMAT.parse(date));
+                long min = Long.MAX_VALUE, diff;
+                for (String[] array : dividendData) {
+                    tempDate.setTime(DATE_FORMAT.parse(array[0]));
+                    diff = getDateDiff(inputDate.getTime(), tempDate.getTime(), TimeUnit.DAYS);
+                    if (diff > 0 && diff < min && diff < 120) {
+                        min = diff;
+                        r = Double.parseDouble(array[1]);
+                    }
+                }
+            }
+        } catch (ParseException ex) {
+            Logger.getLogger(StatCalculator.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return r;
+    }
+
+    public static int CalculateDaysTillNextDivdnt(String date, ArrayList<String[]> dividendData) {
+        int r = 999;
+        try {
+            if (dividendData != null) {
+                Calendar inputDate = Calendar.getInstance();
+                Calendar tempDate = Calendar.getInstance();
+                inputDate.setTime(DATE_FORMAT.parse(date));
+                long min = Long.MAX_VALUE, diff;
+                for (String[] array : dividendData) {
+                    tempDate.setTime(DATE_FORMAT.parse(array[0]));
+                    diff = getDateDiff(inputDate.getTime(), tempDate.getTime(), TimeUnit.DAYS);
+                    if (diff > 0 && diff < min && diff < 120) {
+                        min = diff;
+                        r = (int) min;
+                    }
+                }
+            }
+        } catch (ParseException ex) {
+            Logger.getLogger(StatCalculator.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return r;
+    }
+
+    public static long getDateDiff(Date date1, Date date2, TimeUnit timeUnit) {
+        long diffInMillies = date2.getTime() - date1.getTime();
+        return timeUnit.convert(diffInMillies, TimeUnit.MILLISECONDS);
+    }
+
     private enum m_READS {
 
         GreatW,
@@ -417,4 +471,28 @@ public class StatCalculator {
         return null;
     }
 
+    protected static Calendar getFirstValidDate(
+            ConcurrentHashMap<String, Object[]> rawDataMap)
+            throws ParseException {
+        Calendar start_date = Calendar.getInstance();
+        start_date.setTime(DATE_FORMAT.parse(DEFAULT_START_DATE));
+        //Keep looping until a valid date is found
+        Object[] raw_data;
+        for (int i = 9999; i > 0; i--) {
+            raw_data = rawDataMap.get(DATE_FORMAT.format(start_date.getTime()));
+            if (raw_data != null) {
+                break;
+            }
+            start_date.add(Calendar.DAY_OF_MONTH, 1);
+        }
+        return start_date;
+    }
+
+    protected static double average(LinkedList<Double> queue) {
+        double sum = 0;
+        for (Double e : queue) {
+            sum += (double) e;
+        }
+        return sum / queue.size();
+    }
 }

@@ -1,6 +1,6 @@
 package datapreparer;
 
-import static datapreparer.TrainingFileGenerator.RESOURCE_PATH;
+import static core.GlobalConfigs.RESOURCE_PATH;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;

@@ -1,6 +1,6 @@
-package datapreparer;
+package calculator;
 
-import static datapreparer.StatCalculator.*;
+import static calculator.StatCalculator.*;
 
 import java.util.concurrent.ConcurrentHashMap;
 
