@@ -23,17 +23,10 @@ public class IndicieValueMaker {
             Object[] temp_row;
             for (String d : raw_data_map.keySet()) {
                 int days;
-                temp_row = new Object[WEEK_MULTIPIER.length * 2];
+                temp_row = new Object[WEEK_MULTIPIER.length];
                 for (int i = 0; i < WEEK_MULTIPIER.length; i++) {
                     days = WEEK_MULTIPIER[i] * 7;
                     temp_row[i] = StatCalculator.
-                            CalculateExtremeInPeriod(
-                                    d, raw_data_map, days, days, true);
-                }
-
-                for (int i = 0; i < WEEK_MULTIPIER.length; i++) {
-                    days = WEEK_MULTIPIER[i] * 7;
-                    temp_row[WEEK_MULTIPIER.length + i] = StatCalculator.
                             CalculateExtremeInPeriod(
                                     d, raw_data_map, days, days, false);
                 }

@@ -1,7 +1,7 @@
-AAPL,^IXK
-MSFT,^IXK
-GOOG,^IXK
-YHOO,^IXK
-GE,^IXID
-BAC,^IXFN
-XOM,^IXUT
+AAPL,^IXK,Apple_Inc.
+MSFT,^IXK,Microsoft
+GOOG,^IXK,Google
+YHOO,^IXK,Yahoo!
+GE,^IXID,General_Electric
+BAC,^IXFN,Bank_of_America
+XOM,^IXUT,ExxonMobil

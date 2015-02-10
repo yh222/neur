@@ -56,20 +56,20 @@ public class StatCalculatorTest {
     @Test
     public void testCalculateRawTrend() {
         //Test today
-        Object out = CalculateRawTrend("2005-12-23", raw_data_map, 0, 0);
+        Object out = CalculateMomentum("2005-12-23", raw_data_map, 0, 0);
         System.out.println(out);
         assertTrue((double) out == (116.56 - 117.38) / 117.38);//-0.006985857897427102
         //Test yesterday
-        out = CalculateRawTrend("2005-12-23", raw_data_map, 1, 0);
+        out = CalculateMomentum("2005-12-23", raw_data_map, 1, 0);
         System.out.println(out);
         assertTrue((double) out == (112.62 - 113.56) / 113.56); //-0.0082775625220148
         //Test for past 3 days
-        out = CalculateRawTrend("2005-12-23", raw_data_map, 3, 3);
+        out = CalculateMomentum("2005-12-23", raw_data_map, 3, 3);
         System.out.println(out);
         assertTrue((double) out == (116.56 - 108.29) / 108.29); //0.0542691751085384
 
         //Test for future 7 days
-        out = CalculateRawTrend("2005-12-21", raw_data_map, 0, 6);
+        out = CalculateMomentum("2005-12-21", raw_data_map, 0, 6);
         System.out.println(out);
         assertTrue((double) out == (105.99 - 110.70) / 110.70); //0.0542691751085384
     }

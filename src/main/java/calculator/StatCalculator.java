@@ -9,6 +9,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -53,7 +54,7 @@ public class StatCalculator {
         return current_volume / (sum_volume / count);
     }
 
-    public static Object CalculateRawTrend(String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration) {
+    public static Object CalculateMomentum(String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration) {
         Calendar start_date = getUsableDate(date, rawDataMap, distance, duration, true, false);
         Calendar end_date = getUsableDate(date, rawDataMap, distance, duration, false, false);
         if (start_date == null || end_date == null) {
@@ -154,9 +155,9 @@ public class StatCalculator {
     }
 
     public static String CalcluateNominalRawTrend(String code, String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration) {
-        Object rt = CalculateRawTrend(date, rawDataMap, distance, duration);
+        Object rt = CalculateMomentum(date, rawDataMap, distance, duration);
         if (rt == null) {
-            return null;
+            return "?";
         }
         return getHighLowClass(code, (double) rt);
     }
@@ -164,7 +165,7 @@ public class StatCalculator {
     public static String CalculateNominalExtreme(String code, String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration, boolean getHighest) {
         Object ext = CalculateExtremeInPeriod(date, rawDataMap, distance, duration, getHighest);
         if (ext == null) {
-            return null;
+            return "?";
         }
         return getHighLowClass(code, (double) ext);
     }
@@ -172,15 +173,21 @@ public class StatCalculator {
     public static String CalculateNominalCluTrend(String code, String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration, boolean getHighest) {
         Object ext = CalculateClusteredTrend(date, rawDataMap, distance, duration, getHighest);
         if (ext == null) {
-            return null;
+            return "?";
         }
         return getHighLowClass(code, (double) ext);
     }
 
-    public static void CountCandleChartUnits(String code, String date, ConcurrentHashMap<String, Object[]> rawDataMap, int duration, Object[] dataToInsert, int insertIndex) {
+    public static void CountCandleChartUnits(String code, String date,
+            ConcurrentHashMap<String, Object[]> rawDataMap,
+            int duration, HashMap<String, Object> targetToInsert) {
+        m_READS[] reads = m_READS.values();
         Calendar start_date = getUsableDate(date, rawDataMap, duration, duration, true, true);
         Calendar end_date = getUsableDate(date, rawDataMap, duration, duration, false, true);
         if (start_date == null || end_date == null) {
+            for (int i = 0; i < m_READS.SIZE; i++) {
+                targetToInsert.put(reads[i].name() + duration + "d", null);
+            }
             return;
         }
         int[] tempResult = new int[m_READS.SIZE];
@@ -193,9 +200,10 @@ public class StatCalculator {
             }
             start_date.add(Calendar.DAY_OF_MONTH, 1);
         }
+
         //Insert results into output array
         for (int i = 0; i < m_READS.SIZE; i++) {
-            dataToInsert[insertIndex + i] = tempResult[i];
+            targetToInsert.put(reads[i].name() + duration + "d", tempResult[i]);
         }
     }
 
@@ -376,7 +384,7 @@ public class StatCalculator {
     private enum m_READS {
 
         GreatW,
-        GreadB,
+        GreatB,
         LongW,
         LongB,
         ShortW,
@@ -415,7 +423,7 @@ public class StatCalculator {
         if (trend > 3.0 * sig) {
             return m_READS.GreatW;
         } else if (trend < -3.0 * sig) {
-            return m_READS.GreadB;
+            return m_READS.GreatB;
         }
         //Longs
         if (trend > 2.0 * sig) {

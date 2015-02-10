@@ -6,8 +6,6 @@ import static core.GlobalConfigs.DEFAULT_PATH;
 import static core.GlobalConfigs.IXIC;
 import static core.GlobalConfigs.GSPC;
 import static core.GlobalConfigs.REVELANT_INDICIES;
-import core.GlobalConfigs.TRAINING_VALUES_NOMINAL;
-import core.GlobalConfigs.TRAINING_VALUES_NUMERIC;
 import static core.GlobalConfigs.WEEK_MULTIPIER;
 import calculator.StatCalculator;
 import static datapreparer.valuemaker.indicie.IndicieValueMaker.loadIndicieData;
@@ -16,6 +14,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,20 +26,22 @@ public class TrainingValueMaker {
     String m_Code;
     //date, value
     ArrayList<String[]> m_DividendData;
+    HashMap<String, String> m_WikiViewData;
 
     public TrainingValueMaker(String code) {
         m_Code = code;
         loadDividendData();
+        loadWikiViewData();
     }
+
+    public static final String nom = "N_";
 
     // storageRow will store new items created
     public void generateNumericTrainingValues(String date,
             ConcurrentHashMap<String, Object[]> rawDataMap,
-            Object[] storageRow) {
-        addRawTrends(date, rawDataMap, storageRow);
-        addExtremeValue(date, rawDataMap, storageRow,
-                TRAINING_VALUES_NUMERIC.PASTHIGH_7d.ordinal(),
-                TRAINING_VALUES_NUMERIC.PASTLOW_7d.ordinal());
+            HashMap<String, Object> storageRow) {
+        addMomentums(date, rawDataMap, storageRow);
+        addExtremeValue(date, rawDataMap, storageRow);
         addClusteredTrends(date, rawDataMap, storageRow);
         addVelocities(date, rawDataMap, storageRow);
         addCandleChartUnitCounts(m_Code, date, rawDataMap, storageRow);
@@ -49,127 +50,123 @@ public class TrainingValueMaker {
         addEMAs(date, rawDataMap, storageRow);
         addSMAs(date, rawDataMap, storageRow);
         addRSIs(date, rawDataMap, storageRow);
+        //addWikiViewCount(date, storageRow);
     }
 
     public void generateNominalTrainingValues(String date,
             ConcurrentHashMap<String, Object[]> rawDataMap,
-            Object[] storageRow) {
+            HashMap<String, Object> storageRow) {
         addSeasonOfYear(date, storageRow);
         addDayOfWeek(date, storageRow);
-        addCandleUnitForDay(m_Code, date, rawDataMap, storageRow);
+        //addCandleUnitForDay(m_Code, date, rawDataMap, storageRow);
     }
 
-    private void addRawTrends(String date,
+    private void addMomentums(String date,
             ConcurrentHashMap<String, Object[]> rawDataMap,
-            Object[] storageRow) {
-        storageRow[TRAINING_VALUES_NUMERIC.RAWTREND_0d.ordinal()]
-                = StatCalculator.CalculateRawTrend(date, rawDataMap, 0, 0);
-        storageRow[TRAINING_VALUES_NUMERIC.RAWTREND_1d.ordinal()]
-                = StatCalculator.CalculateRawTrend(date, rawDataMap, 1, 0);
-        storageRow[TRAINING_VALUES_NUMERIC.RAWTREND_3d.ordinal()]
-                = StatCalculator.CalculateRawTrend(date, rawDataMap, 3, 3);
-        int index = TRAINING_VALUES_NUMERIC.RAWTREND_7d.ordinal();
+            HashMap<String, Object> storageRow) {
+        storageRow.put("Momentum_0d",
+                StatCalculator.CalculateMomentum(date, rawDataMap, 0, 0));
+        storageRow.put("Momentum_1d",
+                StatCalculator.CalculateMomentum(date, rawDataMap, 1, 0));
+        storageRow.put("Momentum_3d",
+                StatCalculator.CalculateMomentum(date, rawDataMap, 3, 3));
+
         int days;
         for (int i = 0; i < WEEK_MULTIPIER.length; i++) {
             days = WEEK_MULTIPIER[i] * 7;
-            storageRow[index + i] = StatCalculator.
-                    CalculateRawTrend(date, rawDataMap, days, days);
+            storageRow.put("Momentum_" + days + "d",
+                    StatCalculator.CalculateMomentum(date, rawDataMap, days, days));
         }
     }
 
     private static void addVelocities(String date,
             ConcurrentHashMap<String, Object[]> rawDataMap,
-            Object[] storageRow) {
-        storageRow[TRAINING_VALUES_NUMERIC.VELOCITY_15d.ordinal()]
-                = StatCalculator.CalcluateVelocity(date, rawDataMap, 15);
+            HashMap<String, Object> storageRow) {
+        storageRow.put("Velocity_5d",
+                StatCalculator.CalcluateVelocity(date, rawDataMap, 5));
         // 21 day (plus weekends) duration NASDAQ velocity
-        storageRow[TRAINING_VALUES_NUMERIC.VELOCITY_30d.ordinal()]
-                = StatCalculator.CalcluateVelocity(date, rawDataMap, 30);
+        storageRow.put("Velocity_21d",
+                StatCalculator.CalcluateVelocity(date, rawDataMap, 21));
     }
 
-    private void addSeasonOfYear(String date, Object[] storageRow) {
-        storageRow[TRAINING_VALUES_NOMINAL.SEASON_YEAR.ordinal()]
-                = StatCalculator.CalculateSeasonOfYear(date);
+    private void addSeasonOfYear(String date,
+            HashMap<String, Object> storageRow) {
+        storageRow.put(nom + "Season",
+                StatCalculator.CalculateSeasonOfYear(date));
     }
 
     private void addExtremeValue(String date,
             ConcurrentHashMap<String, Object[]> rawDataMap,
-            Object[] storageRow, int ind1, int ind2) {
-        int index = ind1;
+            HashMap<String, Object> storageRow) {
         int days;
         for (int i = 0; i < WEEK_MULTIPIER.length; i++) {
             days = WEEK_MULTIPIER[i] * 7;
-            storageRow[index + i] = StatCalculator.
-                    CalculateExtremeInPeriod(
-                            date, rawDataMap, days, days, true);
+            storageRow.put("PastHigh_" + days + "d",
+                    StatCalculator.CalculateExtremeInPeriod(
+                            date, rawDataMap, days, days, true));
         }
-        index = ind2;
+
         for (int i = 0; i < WEEK_MULTIPIER.length; i++) {
             days = WEEK_MULTIPIER[i] * 7;
-            storageRow[index + i] = StatCalculator.
-                    CalculateExtremeInPeriod(
-                            date, rawDataMap, days, days, false);
+            storageRow.put("PastLow_" + days + "d",
+                    StatCalculator.CalculateExtremeInPeriod(
+                            date, rawDataMap, days, days, false));
         }
     }
 
-    private void addDayOfWeek(String date, Object[] storageRow) {
-        storageRow[TRAINING_VALUES_NOMINAL.DAY_OF_WEEK.ordinal()]
-                = StatCalculator.CalculateDayOfWeek(date);
+    private void addDayOfWeek(String date, HashMap<String, Object> storageRow) {
+        storageRow.put(nom + "DayOfWeek",
+                StatCalculator.CalculateDayOfWeek(date));
     }
 
     private void addClusteredTrends(String date,
             ConcurrentHashMap<String, Object[]> rawDataMap,
-            Object[] storageRow) {
-        int index = TRAINING_VALUES_NUMERIC.CLUTRENDHIGH_7d.ordinal();
+            HashMap<String, Object> storageRow) {
         int days;
         for (int i = 0; i < WEEK_MULTIPIER.length; i++) {
             days = WEEK_MULTIPIER[i] * 7;
-            storageRow[index + i] = StatCalculator.
-                    CalculateClusteredTrend(date, rawDataMap, days, days, true);
+            storageRow.put("CTrendHigh_" + days + "d", StatCalculator.
+                    CalculateClusteredTrend(date, rawDataMap, days, days, true));
         }
-        index = TRAINING_VALUES_NUMERIC.CLUTRENDLOW_7d.ordinal();
+
         for (int i = 0; i < WEEK_MULTIPIER.length; i++) {
             days = WEEK_MULTIPIER[i] * 7;
-            storageRow[index + i] = StatCalculator.
-                    CalculateClusteredTrend(
-                            date, rawDataMap, days, days, false);
+            storageRow.put("CTrendLow_" + days + "d", StatCalculator.
+                    CalculateClusteredTrend(date, rawDataMap, days, days, false));
         }
     }
 
     private void addCandleChartUnitCounts(String code, String date,
             ConcurrentHashMap<String, Object[]> rawDataMap,
-            Object[] storageRow) {
+            HashMap<String, Object> storageRow) {
         StatCalculator.CountCandleChartUnits(code, date, rawDataMap, 7,
-                storageRow,
-                TRAINING_VALUES_NUMERIC.GreatW_7d.ordinal());
+                storageRow);
         StatCalculator.CountCandleChartUnits(code, date, rawDataMap, 15,
-                storageRow,
-                TRAINING_VALUES_NUMERIC.GreatW_15d.ordinal());
+                storageRow);
         StatCalculator.CountCandleChartUnits(code, date, rawDataMap, 30,
-                storageRow,
-                TRAINING_VALUES_NUMERIC.GreatW_30d.ordinal());
-        StatCalculator.CountCandleChartUnits(code, date, rawDataMap, 60,
-                storageRow,
-                TRAINING_VALUES_NUMERIC.GreatW_60d.ordinal());
+                storageRow);
+//        StatCalculator.CountCandleChartUnits(code, date, rawDataMap, 60,
+//                storageRow);
     }
 
     private void addCandleUnitForDay(String code, String date,
             ConcurrentHashMap<String, Object[]> rawDataMap,
-            Object[] storageRow) {
-        int index = TRAINING_VALUES_NOMINAL.CadRead_1d.ordinal();
-        for (int i = 0; i < 30; i++) {
-            storageRow[index + i] = StatCalculator.
-                    CalculateCandleUnitForDay(code, date, rawDataMap, i);
+            HashMap<String, Object> storageRow) {
+        //int index = TRAINING_VALUES_NOMINAL.CadRead_1d.ordinal();
+        for (int i = 1; i <= 60; i++) {
+            storageRow.put(nom + "CadRead_" + i + "d", StatCalculator.
+                    CalculateCandleUnitForDay(code, date, rawDataMap, i));
         }
     }
 
-    private void addDividendData(String date, Object[] storageRow) {
-        storageRow[TRAINING_VALUES_NUMERIC.DividendAmount.ordinal()]
-                = StatCalculator.CalculateDividentAmt(
-                        date, m_DividendData);
-        storageRow[TRAINING_VALUES_NUMERIC.DaysTillNextDividend.ordinal()]
-                = StatCalculator.
-                CalculateDaysTillNextDivdnt(date, m_DividendData);
+    private void addDividendData(String date, HashMap<String, Object> storageRow) {
+
+        storageRow.put("DividendAmount", StatCalculator.CalculateDividentAmt(
+                date, m_DividendData));
+
+        storageRow.put("DaysTillNextDividend", StatCalculator.CalculateDaysTillNextDivdnt(
+                date, m_DividendData));
+
     }
 
     private void loadDividendData() {
@@ -196,28 +193,53 @@ public class TrainingValueMaker {
         }
     }
 
+    private void loadWikiViewData() {
+        if (m_WikiViewData == null) {
+            File file = new File(DEFAULT_PATH + "//resources//" + m_Code
+                    + "//" + m_Code + "_WikiView.csv");
+            HashMap<String, String> map = new HashMap();
+            if (file.isFile()) {
+                try (BufferedReader reader
+                        = new BufferedReader(new FileReader(file))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        String[] parts = line.split(",");
+                        // Data order: 1, date 2, view count
+                        map.put(parts[0], parts[1]);
+                    }
+                    m_WikiViewData = map;
+                } catch (Exception ex) {
+                    Logger.getLogger(TrainingValueMaker.class.getName())
+                            .log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+    }
+
     // Does not need rawDataMap as indicie data is get from static data keeper.
     private void addIndicieInfulences(String date,
-            Object[] storageRow) {
+            HashMap<String, Object> storageRow) {
         Object[] calculated_indicie_data
                 = loadIndicieData(IXIC, date);
-        int index = TRAINING_VALUES_NUMERIC.IXICCLUTRENDHIGH_7d.ordinal();
-        for (int i = 0; i < WEEK_MULTIPIER.length * 2; i++) {
+        int days;
+        for (int i = 0; i < WEEK_MULTIPIER.length; i++) {
+            days = WEEK_MULTIPIER[i] * 7;
             if (calculated_indicie_data == null) {
-                storageRow[index + i] = 0.0;
-            } else {
-                storageRow[index + i] = calculated_indicie_data[i];
-            }
+                storageRow.put("IXICCTrendLow_" + days + "d", 0.0);
 
+            } else {
+                storageRow.put("IXICCTrendLow_" + days + "d", calculated_indicie_data[i]);
+            }
         }
 
         calculated_indicie_data = loadIndicieData(GSPC, date);
-        index = TRAINING_VALUES_NUMERIC.GSPCCLUTRENDHIGH_7d.ordinal();
-        for (int i = 0; i < WEEK_MULTIPIER.length * 2; i++) {
+        for (int i = 0; i < WEEK_MULTIPIER.length; i++) {
+            days = WEEK_MULTIPIER[i] * 7;
             if (calculated_indicie_data == null) {
-                storageRow[index + i] = 0.0;
+                storageRow.put("GSPCCTrendLow_" + days + "d", 0.0);
+
             } else {
-                storageRow[index + i] = calculated_indicie_data[i];
+                storageRow.put("GSPCCTrendLow_" + days + "d", calculated_indicie_data[i]);
             }
         }
 
@@ -233,50 +255,39 @@ public class TrainingValueMaker {
             }
         }
 
-        index = TRAINING_VALUES_NUMERIC.REVCLUTRENDHIGH_7d.ordinal();
-        for (int i = 0;
-                i < WEEK_MULTIPIER.length * 2; i++) {
+        for (int i = 0; i < WEEK_MULTIPIER.length; i++) {
+            days = WEEK_MULTIPIER[i] * 7;
             if (calculated_indicie_data == null) {
-                storageRow[index + i] = 0.0;
+                storageRow.put("REVCTrendLow_" + days + "d", 0.0);
+
             } else {
-                storageRow[index + i] = calculated_indicie_data[i];
+                storageRow.put("REVCTrendLow_" + days + "d", calculated_indicie_data[i]);
             }
         }
+
     }
 
-    private void addEMAs(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
+    private void addEMAs(String date, ConcurrentHashMap<String, Object[]> rawDataMap, HashMap<String, Object> storageRow) {
         try {
-            storageRow[TRAINING_VALUES_NUMERIC.EMA5.ordinal()]
-                    = m_MovingAverage.getEMA(date, 5, rawDataMap);
-            storageRow[TRAINING_VALUES_NUMERIC.EMA10.ordinal()]
-                    = m_MovingAverage.getEMA(date, 10, rawDataMap);
-            storageRow[TRAINING_VALUES_NUMERIC.EMA20.ordinal()]
-                    = m_MovingAverage.getEMA(date, 20, rawDataMap);
-            storageRow[TRAINING_VALUES_NUMERIC.EMA50.ordinal()]
-                    = m_MovingAverage.getEMA(date, 50, rawDataMap);
-            storageRow[TRAINING_VALUES_NUMERIC.EMA100.ordinal()]
-                    = m_MovingAverage.getEMA(date, 100, rawDataMap);
-            storageRow[TRAINING_VALUES_NUMERIC.EMA200.ordinal()]
-                    = m_MovingAverage.getEMA(date, 200, rawDataMap);
+            storageRow.put("EMA5", m_MovingAverage.getEMA(date, 5, rawDataMap));
+            storageRow.put("EMA10", m_MovingAverage.getEMA(date, 10, rawDataMap));
+            storageRow.put("EMA20", m_MovingAverage.getEMA(date, 20, rawDataMap));
+            storageRow.put("EMA50", m_MovingAverage.getEMA(date, 50, rawDataMap));
+            storageRow.put("EMA100", m_MovingAverage.getEMA(date, 100, rawDataMap));
+            //storageRow.put("EMA200", m_MovingAverage.getEMA(date, 200, rawDataMap));
         } catch (ParseException ex) {
             Logger.getLogger(TrainingValueMaker.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
-    private void addSMAs(String date, ConcurrentHashMap<String, Object[]> rawDataMap, Object[] storageRow) {
+    private void addSMAs(String date, ConcurrentHashMap<String, Object[]> rawDataMap, HashMap<String, Object> storageRow) {
         try {
-            storageRow[TRAINING_VALUES_NUMERIC.SMA5.ordinal()]
-                    = m_MovingAverage.getSMA(date, 5, rawDataMap);
-            storageRow[TRAINING_VALUES_NUMERIC.SMA10.ordinal()]
-                    = m_MovingAverage.getSMA(date, 10, rawDataMap);
-            storageRow[TRAINING_VALUES_NUMERIC.SMA20.ordinal()]
-                    = m_MovingAverage.getSMA(date, 20, rawDataMap);
-            storageRow[TRAINING_VALUES_NUMERIC.SMA50.ordinal()]
-                    = m_MovingAverage.getSMA(date, 50, rawDataMap);
-            storageRow[TRAINING_VALUES_NUMERIC.SMA100.ordinal()]
-                    = m_MovingAverage.getSMA(date, 100, rawDataMap);
-            storageRow[TRAINING_VALUES_NUMERIC.SMA200.ordinal()]
-                    = m_MovingAverage.getSMA(date, 200, rawDataMap);
+            storageRow.put("SMA5", m_MovingAverage.getSMA(date, 5, rawDataMap));
+            storageRow.put("SMA10", m_MovingAverage.getSMA(date, 10, rawDataMap));
+            storageRow.put("SMA20", m_MovingAverage.getSMA(date, 20, rawDataMap));
+            storageRow.put("SMA50", m_MovingAverage.getSMA(date, 50, rawDataMap));
+            storageRow.put("SMA100", m_MovingAverage.getSMA(date, 100, rawDataMap));
+            //storageRow.put("SMA200", m_MovingAverage.getSMA(date, 200, rawDataMap));
         } catch (ParseException ex) {
             Logger.getLogger(TrainingValueMaker.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -284,25 +295,22 @@ public class TrainingValueMaker {
 
     private void addRSIs(String date,
             ConcurrentHashMap<String, Object[]> rawDataMap,
-            Object[] storageRow) {
+            HashMap<String, Object> storageRow) {
         try {
-            storageRow[TRAINING_VALUES_NUMERIC.RSI10.ordinal()]
-                    = m_RSI.getRSI(date, 10, 0, rawDataMap);
-            storageRow[TRAINING_VALUES_NUMERIC.RSI20.ordinal()]
-                    = m_RSI.getRSI(date, 20, 0, rawDataMap);
-            storageRow[TRAINING_VALUES_NUMERIC.RSI30.ordinal()]
-                    = m_RSI.getRSI(date, 30, 0, rawDataMap);
-            storageRow[TRAINING_VALUES_NUMERIC.RSI50.ordinal()]
-                    = m_RSI.getRSI(date, 50, 0, rawDataMap);
-            //
-            storageRow[TRAINING_VALUES_NUMERIC.RSI10_P10.ordinal()]
-                    = m_RSI.getRSI(date, 10, 10, rawDataMap);
-            storageRow[TRAINING_VALUES_NUMERIC.RSI20_P20.ordinal()]
-                    = m_RSI.getRSI(date, 20, 20, rawDataMap);
+            storageRow.put("RSI10", m_RSI.getRSI(date, 10, 0, rawDataMap));
+            storageRow.put("RSI20", m_RSI.getRSI(date, 20, 0, rawDataMap));
+            storageRow.put("RSI30", m_RSI.getRSI(date, 30, 0, rawDataMap));
+            storageRow.put("RSI50", m_RSI.getRSI(date, 50, 0, rawDataMap));
+            storageRow.put("RSI10_P10", m_RSI.getRSI(date, 10, 10, rawDataMap));
+            storageRow.put("RSI20_P20", m_RSI.getRSI(date, 20, 20, rawDataMap));
 
         } catch (ParseException ex) {
             Logger.getLogger(TrainingValueMaker.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+
+    private void addWikiViewCount(String date, HashMap<String, Object> storageRow) {
+        storageRow.put("WikiViewCount", m_WikiViewData.get(date));
     }
 
 }
