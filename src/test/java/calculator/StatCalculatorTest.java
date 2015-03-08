@@ -56,20 +56,20 @@ public class StatCalculatorTest {
     @Test
     public void testCalculateRawTrend() {
         //Test today
-        Object out = CalculateMomentum("2005-12-23", raw_data_map, 0, 0);
+        Object out = getMomentum("2005-12-23", raw_data_map, 0, 0);
         System.out.println(out);
         assertTrue((double) out == (116.56 - 117.38) / 117.38);//-0.006985857897427102
         //Test yesterday
-        out = CalculateMomentum("2005-12-23", raw_data_map, 1, 0);
+        out = getMomentum("2005-12-23", raw_data_map, 1, 0);
         System.out.println(out);
         assertTrue((double) out == (112.62 - 113.56) / 113.56); //-0.0082775625220148
         //Test for past 3 days
-        out = CalculateMomentum("2005-12-23", raw_data_map, 3, 3);
+        out = getMomentum("2005-12-23", raw_data_map, 3, 3);
         System.out.println(out);
         assertTrue((double) out == (116.56 - 108.29) / 108.29); //0.0542691751085384
 
         //Test for future 7 days
-        out = CalculateMomentum("2005-12-21", raw_data_map, 0, 6);
+        out = getMomentum("2005-12-21", raw_data_map, 0, 6);
         System.out.println(out);
         assertTrue((double) out == (105.99 - 110.70) / 110.70); //0.0542691751085384
     }
@@ -77,11 +77,11 @@ public class StatCalculatorTest {
     @Test
     public void testCalcluateVelocity() {
         //Test 3 day velocity
-        Object out = CalcluateVelocity("2005-12-27", raw_data_map, 3);
+        Object out = getVelocity("2005-12-27", raw_data_map, 3);
         System.out.println(out);
         assertTrue((double) out == 78513300.0 / ((67218100.0 + 53228400.0 + 54119000.0) / 3));//1.349292385952551
 
-        out = CalcluateVelocity("2006-01-03", raw_data_map, 8);
+        out = getVelocity("2006-01-03", raw_data_map, 8);
         System.out.println(out);
         assertTrue((double) out == 60790700.0 / ((64285500.0 + 67218100.0 + 53228400.0
                 + 54119000.0 + 47450800.0 + 34968500.0 + 38318900.0 + 78513300.0) / 8));//1.349292385952551
@@ -89,49 +89,49 @@ public class StatCalculatorTest {
 
     @Test
     public void testCalcluateSituation() {
-        Object out = CalcluateNominalRawTrend("MSFT", "2005-12-21", raw_data_map, 0, 2);
+        Object out = getNominalRawTrend("MSFT", "2005-12-21", raw_data_map, 0, 2);
         System.out.println(out);
         assertTrue(out.equals("Little_High"));
 
-        out = CalcluateNominalRawTrend("MSFT", "2005-12-20", raw_data_map, 0, 8);
+        out = getNominalRawTrend("MSFT", "2005-12-20", raw_data_map, 0, 8);
         System.out.println(out);
         assertTrue(out.equals("Very_High"));
 
-        out = CalcluateNominalRawTrend("MSFT", "2005-12-19", raw_data_map, 0, 8);
+        out = getNominalRawTrend("MSFT", "2005-12-19", raw_data_map, 0, 8);
         System.out.println(out);
         assertTrue(out.equals("Little_Low"));
 
-        out = CalcluateNominalRawTrend("MSFT", "2005-12-28", raw_data_map, 0, 7);
+        out = getNominalRawTrend("MSFT", "2005-12-28", raw_data_map, 0, 7);
         System.out.println(out);
         assertTrue(out.equals("Very_Low"));
 
-        out = CalcluateNominalRawTrend("MSFT", "2005-12-22", raw_data_map, 0, 0);
+        out = getNominalRawTrend("MSFT", "2005-12-22", raw_data_map, 0, 0);
         System.out.println(out);
         assertTrue(out.equals("Stay"));
     }
 
     @Test
     public void testCalculateNominalExtreme() {
-        Object out = CalculateNominalExtreme("MSFT", "2005-12-21", raw_data_map, 0, 7, true);
+        Object out = getNominalExtreme("MSFT", "2005-12-21", raw_data_map, 0, 7, true);
         System.out.println(out);
         assertTrue(out.equals("Very_High"));
 
-        out = CalculateNominalExtreme("MSFT", "2005-12-21", raw_data_map, 0, 8, false);
+        out = getNominalExtreme("MSFT", "2005-12-21", raw_data_map, 0, 8, false);
         System.out.println(out);
         assertTrue(out.equals("Little_Low"));
 
-        out = CalculateNominalExtreme("MSFT", "2006-01-04", raw_data_map, 6, 6, true);
+        out = getNominalExtreme("MSFT", "2006-01-04", raw_data_map, 6, 6, true);
         System.out.println(out);
         assertTrue(out.equals("High"));
     }
 
     @Test
     public void testCalculateNominalCluTrend() {
-        Object out = CalculateNominalCluTrend("MSFT", "2005-12-21", raw_data_map, 0, 7, true);
+        Object out = getNominalCluTrend("MSFT", "2005-12-21", raw_data_map, 0, 7, true);
         System.out.println(out);
         assertTrue(out.equals("Very_High"));
 
-        out = CalculateNominalCluTrend("MSFT", "2005-12-19", raw_data_map, 0, 7, true);
+        out = getNominalCluTrend("MSFT", "2005-12-19", raw_data_map, 0, 7, true);
         System.out.println(out);
         assertTrue(out.equals("Very_High"));
 
@@ -139,11 +139,11 @@ public class StatCalculatorTest {
 
     @Test
     public void testCalculateCandleUnitForDay() {
-        String out = CalculateCandleUnitForDay("MSFT", "2005-12-20", raw_data_map, 1);
+        String out = getCandleUnitForDay("MSFT", "2005-12-20", raw_data_map, 1);
         System.out.println(out);
         assertTrue(out.equals("StarW"));
         
-        out = CalculateCandleUnitForDay("MSFT", "2005-12-19", raw_data_map, 1);
+        out = getCandleUnitForDay("MSFT", "2005-12-19", raw_data_map, 1);
         System.out.println(out);
         assertTrue(out.equals("ShortWD"));
     }

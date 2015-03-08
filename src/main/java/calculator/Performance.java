@@ -1,5 +1,6 @@
-package core;
+package calculator;
 
+import core.GlobalConfigs;
 import static core.GlobalConfigs.MODEL_PATH;
 import static core.GlobalConfigs.REPORT_PATH;
 import java.io.BufferedWriter;
@@ -21,19 +22,25 @@ import weka.core.Instances;
 public class Performance {
 
   // Structure: Code -> (ClassifierName-> Data)
-  public static final ConcurrentHashMap<String, ConcurrentHashMap<String, double[][]>> PERFORMANCES = loadMap();
+  private ConcurrentHashMap<String, ConcurrentHashMap<String, float[][]>> m_Performance;
+  private final String m_TypePath;
+
+  public Performance(ArrayList<String> instruments, String modelType) {
+    m_Performance = loadMap(instruments);
+    m_TypePath = modelType + "//";
+  }
 
 // identification of a model  -> Performance Data
     /* Because for each class attribute, an independet classifier is used,
    * then they will be organized by different identifications.
    */
-  public static void saveModelAndPerformance(String code,
+  public void saveModelAndPerformance(String code,
           String identification,
           Classifier classifier,
           Instances trainHeader,
-          double[] performance) {
+          float[] performance) {
 
-    String dir = MODEL_PATH + code + "//";
+    String dir = MODEL_PATH + m_TypePath + code + "//";
     File theDir = new File(dir);
     if (!theDir.exists()) {
       theDir.mkdir();
@@ -62,54 +69,54 @@ public class Performance {
 
   }
 
-  private static void putClassifier(String classifierName) {
-    for (ConcurrentHashMap<String, double[][]> m : PERFORMANCES.values()) {
+  private void putClassifier(String classifierName) {
+    for (ConcurrentHashMap<String, float[][]> m : m_Performance.values()) {
       if (!m.containsKey(classifierName)) {
-        m.put(classifierName, new double[GlobalConfigs.ClassCount][]);
+        m.put(classifierName, new float[GlobalConfigs.getClassCount(m_TypePath)][]);
       } else {
         break;
       }
     }
   }
 
-  public static void putClassResult(String code, String classifierName, double[] result, int index) {
-    double[][] data = PERFORMANCES.get(code).get(classifierName);
+  public void putClassResult(String code, String classifierName, float[] result, int index) {
+    float[][] data = m_Performance.get(code).get(classifierName);
     if (data == null) {
       putClassifier(classifierName);
-      data = PERFORMANCES.get(code).get(classifierName);
+      data = m_Performance.get(code).get(classifierName);
     }
     assert data != null;
     data[index] = result;
 
   }
 
-  private static ConcurrentHashMap<String, ConcurrentHashMap<String, double[][]>> loadMap() {
-    ConcurrentHashMap<String, ConcurrentHashMap<String, double[][]>> map
+  private ConcurrentHashMap<String, ConcurrentHashMap<String, float[][]>>
+          loadMap(ArrayList<String> instruments) {
+    ConcurrentHashMap<String, ConcurrentHashMap<String, float[][]>> map
             = new ConcurrentHashMap();
-    ArrayList<String> instruments = GlobalConfigs.INSTRUMENT_CODES;
     for (String i : instruments) {
-      map.put(i, new ConcurrentHashMap<String, double[][]>());
+      map.put(i, new ConcurrentHashMap<String, float[][]>());
     }
     return map;
   }
 
-  public static void outputPerformanceData() {
+  public void outputPerformanceData() {
     String code, classifier;
     NumberFormat defaultFormat = NumberFormat.getNumberInstance();
     defaultFormat.setMinimumFractionDigits(2);
 
     try (PrintWriter writer = new PrintWriter(new BufferedWriter(
-            new FileWriter(REPORT_PATH + "_ConfidenceReport.csv", true)))) {
+            new FileWriter(REPORT_PATH + m_TypePath + "_ConfidenceReport.csv", true)))) {
 
-      for (Entry<String, ConcurrentHashMap<String, double[][]>> e1 : PERFORMANCES.entrySet()) {
+      for (Entry<String, ConcurrentHashMap<String, float[][]>> e1 : m_Performance.entrySet()) {
         code = e1.getKey();
         writer.println("\nCode: " + code);
-        for (Entry<String, double[][]> e2 : e1.getValue().entrySet()) {
+        for (Entry<String, float[][]> e2 : e1.getValue().entrySet()) {
           classifier = e2.getKey();
           //String[] split;
           writer.println("Classifier: " + classifier);
           writer.println(",VL,ML,LL,LH,MH,VH");
-          for (int i = 0; i < GlobalConfigs.ClassCount; i++) {
+          for (int i = 0; i < GlobalConfigs.getClassCount(m_TypePath); i++) {
             writer.println(GlobalConfigs.ClassTags.get(i)
                     + "," + defaultFormat.format(e2.getValue()[i][0])
                     + "," + defaultFormat.format(e2.getValue()[i][1])

@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.logging.*;
 import core.GlobalConfigs;
-import static core.GlobalConfigs.DATE_FORMAT;
 import calculator.StatCalculator;
 import static core.GlobalConfigs.DEFAULT_START_DATE;
 import static core.GlobalConfigs.RESOURCE_PATH;
@@ -24,7 +23,7 @@ import java.util.concurrent.TimeUnit;
  * If target .csv file already exists, append new data to the end of the .csv
  * file.
  */
-public class CSVDownloader {
+public class STKCSVDownloader {
 
   public static void updateRawDataFromYahoo(String yhooParameter, ArrayList<String> codeList) {
     String type = "";
@@ -35,10 +34,10 @@ public class CSVDownloader {
     ArrayList<String> instruments = codeList;
     final Calendar today = Calendar.getInstance();
     for (String code : instruments) {
-      String file_path = RESOURCE_PATH + code + "//" + code + type + ".csv";
+      String file_path = RESOURCE_PATH + GlobalConfigs.MODEL_TYPES.STK.name() + "//" + code + "//" + code + type + ".csv";
       Calendar start_date = Calendar.getInstance();
 
-      if (setupStartDate(start_date, code, file_path)) {
+      if (isUpToDate(start_date, code, file_path)) {
         continue;
       }
 
@@ -47,39 +46,43 @@ public class CSVDownloader {
 
         if (!yhooParameter.equals("")) {
           //download data from yahoo
-          URL url = new URL("http://ichart.finance.yahoo.com/table.csv?s=" + code + "&a=" + start_date.get(Calendar.MONTH) + "&b=" + start_date.get(Calendar.DAY_OF_MONTH) + "&c=" + start_date.get(Calendar.YEAR)
+          URL url = new URL("http://ichart.finance.yahoo.com/table.csv?s="
+                  + code + "&a=" + start_date.get(Calendar.MONTH) + "&b=" + start_date.get(Calendar.DAY_OF_MONTH) + "&c=" + start_date.get(Calendar.YEAR)
                   + "&d=" + today.get(Calendar.MONTH) + "&e=" + today.get(Calendar.DAY_OF_MONTH) + "&f=" + today.get(Calendar.YEAR)
                   + "&g=" + yhooParameter + "&ignore=.csv");
           System.out.println("Downloading data for " + code + " from " + url);
           downloadDataFromURL(url, new File(file_path), true, dayDiff);
         } else {
           //download from quotemedia
-          URL url = new URL("http://app.quotemedia.com/quotetools/getHistoryDownload.csv?&webmasterId=501&startDay=" + start_date.get(Calendar.DAY_OF_MONTH) + "&startMonth=" + start_date.get(Calendar.MONTH) + "&startYear=" + start_date.get(Calendar.YEAR)
+          URL url = new URL("http://app.quotemedia.com/quotetools/getHistoryDownload.csv?&webmasterId=501&startDay="
+                  + start_date.get(Calendar.DAY_OF_MONTH) + "&startMonth=" + start_date.get(Calendar.MONTH) + "&startYear=" + start_date.get(Calendar.YEAR)
                   + "&endDay=" + today.get(Calendar.DAY_OF_MONTH) + "&endMonth=" + today.get(Calendar.MONTH) + "&endYear=" + today.get(Calendar.YEAR)
                   + "&isRanged=false&symbol=" + code + "&ignore=.csv");
           System.out.println("Downloading data for " + code + " from " + url);
           downloadDataFromURL(url, new File(file_path), false, dayDiff);
         }
       } catch (MalformedURLException ex) {
-        Logger.getLogger(CSVDownloader.class.getName()).log(Level.SEVERE, null, ex);
+        Logger.getLogger(STKCSVDownloader.class.getName()).log(Level.SEVERE, null, ex);
       }
 
     }
   }
 
-  public static boolean setupStartDate(Calendar start_date, String code, String file_path) {
+  public static boolean isUpToDate(Calendar start_date, String code, String file_path) {
     try {
-      start_date.setTime(DATE_FORMAT.parse(DEFAULT_START_DATE));
+      start_date.setTime(GlobalConfigs.getDateFormat().parse(DEFAULT_START_DATE));
     } catch (ParseException ex) {
-      Logger.getLogger(CSVDownloader.class.getName()).log(Level.SEVERE, null, ex);
-    }
-    File folder = new File(RESOURCE_PATH + code);
-    if (!folder.isDirectory()) {
-      folder.mkdir();
+      Logger.getLogger(STKCSVDownloader.class.getName()).log(Level.SEVERE, null, ex);
     }
     File file = new File(file_path);
+    
+    File folder=file.getParentFile();
+    if(!folder.isDirectory()){
+      folder.mkdir();
+    }
+    
     if (file.isFile()) {
-      
+
       try (final BufferedReader reader = new BufferedReader(
               new FileReader(file))) {
         String line;
@@ -87,27 +90,27 @@ public class CSVDownloader {
         while ((line = reader.readLine()) != null) {
           last_line = line;
         }
-        
+
         if (last_line.length() > 10) {
-          start_date.setTime(DATE_FORMAT.parse(last_line.substring(0, 10)));
+          start_date.setTime(GlobalConfigs.getDateFormat().parse(last_line.substring(0, 10)));
           start_date.add(Calendar.DATE, 1);
-          if (DATE_FORMAT.format(start_date.getTime()).equals(DATE_FORMAT.format(Calendar.getInstance().getTime()))) {
+          if (GlobalConfigs.getDateFormat().format(start_date.getTime()).equals(GlobalConfigs.getDateFormat().format(Calendar.getInstance().getTime()))) {
             //if the date is today, skip
             System.out.println(code + " is up to date, skip.");
             return true;
           }
         }
       } catch (FileNotFoundException ex) {
-        Logger.getLogger(CSVDownloader.class.getName()).log(Level.SEVERE, " failed to create data file for: " + code, ex);
+        Logger.getLogger(STKCSVDownloader.class.getName()).log(Level.SEVERE, " failed to create data file for: " + code, ex);
       } catch (Exception e) {
-        Logger.getLogger(CSVDownloader.class.getName()).log(Level.SEVERE, " error when load data file:" + code, e);
+        Logger.getLogger(STKCSVDownloader.class.getName()).log(Level.SEVERE, " error when load data file:" + code, e);
       }
     } else {
       // Create a new datafile
       try {
         file.createNewFile();
       } catch (IOException ex) {
-        Logger.getLogger(CSVDownloader.class.getName()).log(Level.SEVERE, " failed to create data file for: " + code, ex);
+        Logger.getLogger(STKCSVDownloader.class.getName()).log(Level.SEVERE, " failed to create data file for: " + code, ex);
       }
     }
     return false;
@@ -139,12 +142,12 @@ public class CSVDownloader {
     } catch (FileNotFoundException ex) {
       //Display error only if date difference is high
       if (dayDiff > 2) {
-        Logger.getLogger(CSVDownloader.class.getName()).log(Level.SEVERE, " failed to fetch data from: " + url, ex);
+        Logger.getLogger(STKCSVDownloader.class.getName()).log(Level.SEVERE, " failed to fetch data from: " + url, ex);
       }
     } catch (MalformedURLException ex) {
-      Logger.getLogger(CSVDownloader.class.getName()).log(Level.SEVERE, null, ex);
+      Logger.getLogger(STKCSVDownloader.class.getName()).log(Level.SEVERE, null, ex);
     } catch (IOException ex) {
-      Logger.getLogger(CSVDownloader.class.getName()).log(Level.SEVERE, " error reading from url", ex);
+      Logger.getLogger(STKCSVDownloader.class.getName()).log(Level.SEVERE, " error reading from url", ex);
     }
   }
 
@@ -154,12 +157,12 @@ public class CSVDownloader {
     if (parts.length < 7 || parts[4].equals(parts[6])) {
       return raw;
     }
-    double split = Double.parseDouble(parts[4]) / Double.parseDouble(parts[6]);
-    double open = Double.parseDouble(parts[1]) / split;
-    double high = Double.parseDouble(parts[2]) / split;
-    double low = Double.parseDouble(parts[3]) / split;
-    double close = Double.parseDouble(parts[4]) / split;
-    double vol = Double.parseDouble(parts[5]) / split;
+    double split = Float.parseFloat(parts[4]) / Float.parseFloat(parts[6]);
+    double open = Float.parseFloat(parts[1]) / split;
+    double high = Float.parseFloat(parts[2]) / split;
+    double low = Float.parseFloat(parts[3]) / split;
+    double close = Float.parseFloat(parts[4]) / split;
+    double vol = Float.parseFloat(parts[5]) / split;
 
     return parts[0] + "," + open + "," + high + "," + low + "," + close + "," + vol + "," + parts[6];
   }
@@ -170,10 +173,10 @@ public class CSVDownloader {
   }
 
   public static void main(String[] args) {
-    CSVDownloader.updateRawDataFromYahoo("d", GlobalConfigs.INSTRUMENT_CODES);
-    CSVDownloader.updateRawDataFromYahoo("d", GlobalConfigs.INDICE_CODES);
+    STKCSVDownloader.updateRawDataFromYahoo("d", GlobalConfigs.INSTRUMENT_CODES);
+    STKCSVDownloader.updateRawDataFromYahoo("d", GlobalConfigs.INDICE_CODES);
     //Update dividend data
-    CSVDownloader.updateRawDataFromYahoo("v", GlobalConfigs.INSTRUMENT_CODES);
+    STKCSVDownloader.updateRawDataFromYahoo("v", GlobalConfigs.INSTRUMENT_CODES);
   }
 
 }
