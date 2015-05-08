@@ -1,8 +1,8 @@
 package calculator;
 
-import core.GlobalConfigs;
-import static core.GlobalConfigs.MODEL_PATH;
-import static core.GlobalConfigs.REPORT_PATH;
+import core.GConfigs;
+import static core.GConfigs.MODEL_PATH;
+import static core.GConfigs.REPORT_PATH;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -72,7 +72,7 @@ public class Performance {
   private void putClassifier(String classifierName) {
     for (ConcurrentHashMap<String, float[][]> m : m_Performance.values()) {
       if (!m.containsKey(classifierName)) {
-        m.put(classifierName, new float[GlobalConfigs.getClassCount(m_TypePath)][]);
+        m.put(classifierName, new float[GConfigs.getClassCount(m_TypePath)][]);
       } else {
         break;
       }
@@ -116,8 +116,8 @@ public class Performance {
           //String[] split;
           writer.println("Classifier: " + classifier);
           writer.println(",VL,ML,LL,LH,MH,VH");
-          for (int i = 0; i < GlobalConfigs.getClassCount(m_TypePath); i++) {
-            writer.println(GlobalConfigs.ClassTags.get(i)
+          for (int i = 0; i < GConfigs.getClassCount(m_TypePath); i++) {
+            writer.println(GConfigs.ClassTags.get(i)
                     + "," + defaultFormat.format(e2.getValue()[i][0])
                     + "," + defaultFormat.format(e2.getValue()[i][1])
                     + "," + defaultFormat.format(e2.getValue()[i][2])

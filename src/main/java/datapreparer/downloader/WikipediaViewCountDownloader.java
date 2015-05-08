@@ -1,7 +1,7 @@
 package datapreparer.downloader;
 
-import core.GlobalConfigs;
-import static core.GlobalConfigs.DEFAULT_PATH;
+import core.GConfigs;
+import static core.GConfigs.DEFAULT_PATH;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -29,11 +29,11 @@ public class WikipediaViewCountDownloader {
 
   public static void downloadWikipeidaCounts() {
     DateFormat format = new SimpleDateFormat("yyyyMM", Locale.ENGLISH);
-    ArrayList<String> instruments = GlobalConfigs.INSTRUMENT_CODES;
+    ArrayList<String> instruments = GConfigs.INSTRUMENT_CODES;
     final Calendar today = Calendar.getInstance();
     for (String code : instruments) {
       Calendar start_date = Calendar.getInstance();
-      String file_path = DEFAULT_PATH + "//wikipedia//" + GlobalConfigs.MODEL_TYPES.STK.name() + "//" + code + "//" + code + "_WikiView.csv";
+      String file_path = DEFAULT_PATH + "//wikipedia//" + GConfigs.MODEL_TYPES.STK.name() + "//" + code + "//" + code + "_WikiView.csv";
 
       if (STKCSVDownloader.isUpToDate(start_date, code, file_path)) {
         continue;
@@ -42,7 +42,7 @@ public class WikipediaViewCountDownloader {
       int rest_count = 10;
       while (start_date.get(Calendar.MONTH) != today.get(Calendar.MONTH)
               || start_date.get(Calendar.YEAR) != today.get(Calendar.YEAR)) {
-        downloadAndSaveWikiCountForMonth(start_date, year_month, GlobalConfigs.WIKI_TITTLES.get(code), new File(file_path));
+        downloadAndSaveWikiCountForMonth(start_date, year_month, GConfigs.WIKI_TITTLES.get(code), new File(file_path));
         start_date.add(Calendar.MONTH, 1);
         start_date.set(Calendar.DAY_OF_MONTH, 01);
         year_month = format.format(start_date.getTime());
@@ -96,7 +96,7 @@ public class WikipediaViewCountDownloader {
               continue;
             }
             Calendar tempdate = Calendar.getInstance();
-            tempdate.setTime(GlobalConfigs.getDateFormat().parse(date_string));
+            tempdate.setTime(GConfigs.getDateFormat().parse(date_string));
             temp_date.put(tempdate, value_string);
           }
           break;
@@ -107,7 +107,7 @@ public class WikipediaViewCountDownloader {
               new FileWriter(outFile, true)))) {
         for (Entry<Calendar, String> e : temp_date.entrySet()) {
           if (e.getKey().after(startDate)) {
-            writer.println(GlobalConfigs.getDateFormat().format(e.getKey().getTime()) + "," + e.getValue());
+            writer.println(GConfigs.getDateFormat().format(e.getKey().getTime()) + "," + e.getValue());
           }
         }
       }

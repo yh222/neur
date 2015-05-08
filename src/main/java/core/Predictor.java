@@ -1,9 +1,9 @@
 package core;
 
-import static core.GlobalConfigs.MODEL_PATH;
-import core.GlobalConfigs.MODEL_TYPES;
-import static core.GlobalConfigs.REPORT_PATH;
-import static core.GlobalConfigs.TEMP_PATH;
+import static core.GConfigs.MODEL_PATH;
+import core.GConfigs.MODEL_TYPES;
+import static core.GConfigs.REPORT_PATH;
+import static core.GConfigs.TEMP_PATH;
 import datapreparer.ArffHeadBuilder;
 import datapreparer.RawDataLoader;
 import datapreparer.valuemaker.STKTrainingValueMaker;
@@ -46,8 +46,6 @@ public class Predictor {
     m_TypePath = modelType + "//";
   }
 
-
- 
   private LinkedHashMap<String, Object[]> loadModel(String code) throws IOException, ClassNotFoundException {
     if (m_Models.get(code) == null) {
       m_Models.put(code, new LinkedHashMap());
@@ -135,7 +133,8 @@ public class Predictor {
 
     NumberFormat defaultFormat = NumberFormat.getNumberInstance();
     defaultFormat.setMinimumFractionDigits(2);
-    String ptn = "-(.*)-";
+    defaultFormat.setMaximumFractionDigits(3);
+    String ptn = "_(.*)d";
     Pattern pattern_line = Pattern.compile(ptn);
     String ptn2 = "\\d+";
     Pattern pattern_digit = Pattern.compile(ptn2);
@@ -148,8 +147,8 @@ public class Predictor {
         matcher = pattern_line.matcher(id);
         matcher.find();
         String classAtt = matcher.group();
-        //Remove  '-'
-        classAtt = classAtt.substring(1, classAtt.length() - 1);
+        //Remove  '_'
+        classAtt = classAtt.substring(1, classAtt.length());
         if (!infusedRanks.containsKey(classAtt)) {
           infusedRanks.put(classAtt, 0.0f);
         }
@@ -158,37 +157,61 @@ public class Predictor {
         matcher.find();
         int days = Integer.parseInt(matcher.group());
 
-        if (classAtt.equals(trainHeader.classAttribute().name())) {
-          InputMappedClassifier c = (InputMappedClassifier) p.getValue()[0];
-          c.setTestStructure(inputValues);
-          c.setSuppressMappingReport(true);
-          float[] performance = (float[]) p.getValue()[1];
-          for (Instance i : inputValues) {
-            float result = (float) c.classifyInstance(i);
+        //if (classAtt.equals(trainHeader.classAttribute().name())) {
+        InputMappedClassifier c = (InputMappedClassifier) p.getValue()[0];
+        c.setTestStructure(inputValues);
+        c.setSuppressMappingReport(true);
+        float[] performance = (float[]) p.getValue()[1];
+        for (Instance i : inputValues) {
+          float result = (float) c.classifyInstance(i);
+          if (performance[0] != -1) {//If this is a nominal class
             float classifier_performance = performance[(int) result];
-//            System.out.print(classAtt + ", " + parseResult(result));
-//            System.out.println(", " + performance[result]);
-//            if ((days <= 7 && result != 3) || (result == 0) || (result == 1)
-//                    || (result == 5) || (result == 6)) {
-//              m_Notables.put(code, Boolean.TRUE);
-//            }
-            writer.println(classAtt + "," + parseResult((int) result)
+            writer.println(classAtt + "," + parseResultToClasses((int) result)
                     + "," + defaultFormat.format(classifier_performance) + "," + id);
-            if ((days <= 7 && result != 3) || (result == 0) || (result == 1)
+
+            //e.g. rank for VC_Highest5Day = 2 (little_low)
+            float rank = infusedRanks.get(classAtt);
+            if ((result == 0) || (result == 1)
                     || (result == 5) || (result == 6)) {
-              float rank = infusedRanks.get(classAtt);
-              rank += (result - 3) * classifier_performance;
-              infusedRanks.put(classAtt, rank);
+              rank += 1;
+            } else if (result == 2 || result == 4) {
+              rank += 1;
             }
+            infusedRanks.put(classAtt, rank);
+//              if ((days <= 7 && result != 3) || (result == 0) || (result == 1)
+//                      || (result == 5) || (result == 6)) {
+//                float rank = infusedRanks.get(classAtt);
+//                rank += (result - 3) * classifier_performance;
+//                infusedRanks.put(classAtt, rank);
+//              }
+
+          } else {//If this is a numeric class
+            float rootMeanSquaredError = performance[1];
+            float rootRelativeSquaredError = performance[2];
+            writer.println(classAtt + "," + defaultFormat.format(result)
+                    + "," + defaultFormat.format(rootMeanSquaredError) + ","
+                    + defaultFormat.format(rootRelativeSquaredError) + "," + id);
+
+            float rank = infusedRanks.get(classAtt);
+            if (result <= -2 * GConfigs.getSignificanceNormal(code)
+                    || result >= 2 * GConfigs.getSignificanceNormal(code)) {
+              rank += 1;
+            } else if (result <= -1 * GConfigs.getSignificanceNormal(code)
+                    || result >= GConfigs.getSignificanceNormal(code)) {
+              rank += 1;
+            }
+            infusedRanks.put(classAtt, rank);
           }
+          //  }
         }
       }
+
       try (PrintWriter writer2 = new PrintWriter(new BufferedWriter(
               new FileWriter(new File(REPORT_PATH + m_TypePath + code + "_InfusedPrediction.csv"), false)))) {
         boolean notable = false;
         for (Entry<String, Float> e : infusedRanks.entrySet()) {
-          writer2.println(e.getKey() + "," + defaultFormat.format(e.getValue()));
-          if (Math.abs(e.getValue()/(inputValues.size())) >= 2) {
+          //writer2.println(e.getKey() + "," + defaultFormat.format(e.getValue()));
+          if (e.getValue() / (inputValues.size()) == 4) {
             notable = true;
           }
         }
@@ -243,14 +266,14 @@ public class Predictor {
               || startDate.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) {
         i--;
       } else {
-        dates.add(GlobalConfigs.getDateFormat().format(startDate.getTime()));
+        dates.add(GConfigs.getDateFormat().format(startDate.getTime()));
       }
       startDate.add(Calendar.DAY_OF_MONTH, -1);
     }
     return dates;
   }
 
-  private String parseResult(int i) {
+  private String parseResultToClasses(int i) {
     switch (i) {
       case 0:
         return "Very_Low";
@@ -276,7 +299,7 @@ public class Predictor {
       Predictor predictor = new Predictor(MODEL_TYPES.STK.name());
 
       //loadModels(GlobalConfigs.INSTRUMENT_CODES);
-      predictor.generateDateAndPredictAllCodes(GlobalConfigs.INSTRUMENT_CODES, Calendar.getInstance(), 3);
+      predictor.generateDateAndPredictAllCodes(GConfigs.INSTRUMENT_CODES, Calendar.getInstance(), 2);
 //      ArrayList<String> dates = new ArrayList();
 //      dates.add("2015-02-06");
 //      dates.add("2015-02-05");

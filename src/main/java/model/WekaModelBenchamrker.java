@@ -1,7 +1,7 @@
 package model;
 
-import core.GlobalConfigs;
-import static core.GlobalConfigs.RESOURCE_PATH;
+import core.GConfigs;
+import static core.GConfigs.RESOURCE_PATH;
 
 import calculator.Performance;
 import java.text.NumberFormat;
@@ -18,6 +18,7 @@ import weka.attributeSelection.ReliefFAttributeEval;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.evaluation.Evaluation;
+import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils;
@@ -37,7 +38,7 @@ public class WekaModelBenchamrker {
           benchmarkByClasses(String code,
                   ArrayList<String> classifierNames,
                   ArrayList<String[]> optionsList, int folds) {
-    for (int i = 0; i < GlobalConfigs.getClassCount(m_TypePath); i++) {
+    for (int i = 0; i < GConfigs.getClassCount(m_TypePath); i++) {
       try {
         Instances dataReadyToTrain = weightDataByDate(code);
         removeUnwantedClassValues(dataReadyToTrain, i);
@@ -46,9 +47,9 @@ public class WekaModelBenchamrker {
                 selectAttributes(new Instances(dataReadyToTrain)),
                 code, classifierNames, optionsList, i, folds);
         //Do it again with unfavored attributes
-        benchMarkModels("Secondary",
-                selectUnfavoredAttributes(new Instances(dataReadyToTrain)),
-                code, classifierNames, optionsList, i, folds);
+//        benchMarkModels("Secondary",
+//                selectUnfavoredAttributes(new Instances(dataReadyToTrain)),
+//                code, classifierNames, optionsList, i, folds);
 
       } catch (Exception ex) {
         Logger.getLogger(WekaModelBenchamrker.class.getName()).log(Level.SEVERE, null, ex);
@@ -57,47 +58,80 @@ public class WekaModelBenchamrker {
     //return list;
   }
 
+  //Class index is the relative index of class value, cannot be used directly in datasource
   public HashMap<Evaluation, float[]>
           benchMarkModels(String additionInfo, Instances trainingData,
                   String code, ArrayList<String> classifierNames,
                   ArrayList<String[]> optionsList, int classIndex, int folds) throws Exception {
     HashMap<Evaluation, float[]> modelBenchMap = new HashMap();
-    for (int i = 0; i < classifierNames.size(); i++) {
 
+    //For each classifier
+    for (int i = 0; i < classifierNames.size(); i++) {
       Instances instances = trainingData;
-      Classifier classifier
-              = AbstractClassifier.forName(
-                      classifierNames.get(i),
-                      optionsList.get(i).clone());
+      Classifier classifier = null;
+      Attribute attribut = trainingData.attribute(50);
+      String classifiername;
+      if (trainingData.attribute(50).isNumeric()) {
+        classifiername = optionsList.get(i)[3];
+        //remove the costsensitive warpper as numeric classes can't use it
+        String[] newoptions = Arrays.copyOfRange(optionsList.get(i),
+                5, optionsList.get(i).length);
+        classifier = AbstractClassifier.forName(classifiername, newoptions);
+      } else {
+        classifiername = classifierNames.get(i);
+        classifier = AbstractClassifier.forName(
+                classifiername,
+                optionsList.get(i).clone());
+      }
+      //Create classifier and cross evaluate it
       Evaluation eval = new Evaluation(instances);
       eval.crossValidateModel(classifier, instances, folds, new Random());
       classifier.buildClassifier(instances);
-      float[] result = generateResult(eval);
 
       String identify = optionsList.get(i)[3].substring(17)
               + "-" + instances.classAttribute().name() + "-" + additionInfo;
-
       System.out.println(identify);
-      System.out.println(eval.toMatrixString());
+      float[] result;
+      if (trainingData.attribute(50).isNumeric()) {//If it is numeric
+        result = generateResultForNumeric(eval);
+        System.out.println(eval.rootMeanSquaredError());
+        System.out.println(eval.rootRelativeSquaredError());
+      } else {
+        result = generateResultForNominal(eval);
+        System.out.println(eval.toMatrixString());
+      }
 
       //however, the model for the same classifier will be different
       m_Performance.saveModelAndPerformance(code, identify,
               classifier, trainingData.stringFreeStructure(), result);
-
-      //bench mark for this classifier(ignore the difference between models)
       m_Performance.putClassResult(code, optionsList.get(i)[3].substring(17) + "-" + additionInfo,
               result, classIndex);
+
+//        result = generateResultForNominal(eval);
+//        String identify = optionsList.get(i)[3].substring(17)
+//                + "-" + instances.classAttribute().name() + "-" + additionInfo;
+//
+//        System.out.println(identify);
+//        System.out.println(eval.toMatrixString());
+//
+//        //however, the model for the same classifier will be different
+//        m_Performance.saveModelAndPerformance(code, identify,
+//                classifier, trainingData.stringFreeStructure(), result);
+//
+//        //bench mark for this classifier(ignore the difference between models)
+//        m_Performance.putClassResult(code, optionsList.get(i)[3].substring(17) + "-" + additionInfo,
+//                result, classIndex);
     }
     return modelBenchMap;
   }
 
   private void removeUnwantedClassValues(Instances trainInstances, int classIndex) {
 
-    int target = GlobalConfigs.getClassCount(m_TypePath);
+    int target = GConfigs.getClassCount(m_TypePath);
 
-    trainInstances.setClassIndex(GlobalConfigs.getTrainingCount(m_TypePath) + classIndex);
+    trainInstances.setClassIndex(GConfigs.getTrainingCount(m_TypePath) + classIndex);
     for (int i = 0; i < target; i++) {
-      int tempind = GlobalConfigs.getTrainingCount(m_TypePath) + i;
+      int tempind = GConfigs.getTrainingCount(m_TypePath) + i;
       if (trainInstances.classIndex() != tempind) {
         trainInstances.deleteAttributeAt(tempind);
         i--;
@@ -107,7 +141,22 @@ public class WekaModelBenchamrker {
     //return trainInstances;
   }
 
-  private float[] generateResult(Evaluation eval) {
+  private float[] generateResultForNumeric(Evaluation eval) {
+
+    float[] acc = new float[7];
+    acc[0] = -1;
+    acc[1] = (float) eval.rootMeanSquaredError();
+
+    try {
+      acc[2] = (float) eval.relativeAbsoluteError();
+    } catch (Exception ex) {
+      Logger.getLogger(WekaModelBenchamrker.class.getName()).log(Level.SEVERE, null, ex);
+    }
+
+    return acc;
+  }
+
+  private float[] generateResultForNominal(Evaluation eval) {
     //String r = "";
     NumberFormat defaultFormat = NumberFormat.getPercentInstance();
     defaultFormat.setMinimumFractionDigits(2);
@@ -209,7 +258,7 @@ public class WekaModelBenchamrker {
       Instance ins;
       for (int i = 0; i < data.numInstances(); i++) {
         ins = data.instance(i);
-        tempdate.setTime(GlobalConfigs.getDateFormat().parse(ins.stringValue(1)));
+        tempdate.setTime(GConfigs.getDateFormat().parse(ins.stringValue(1)));
         int yeardiff = Calendar.getInstance().get(Calendar.YEAR) - tempdate.get(Calendar.YEAR);
         //double weight = -0.01 * (Math.pow(yeardiff, 2)) + 1;
         double weight = -0.2 * yeardiff + 1;
@@ -224,4 +273,5 @@ public class WekaModelBenchamrker {
     }
     return null;
   }
+
 }

@@ -1,6 +1,6 @@
 package calculator;
 
-import core.GlobalConfigs;
+import core.GConfigs;
 import java.text.ParseException;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -31,7 +31,7 @@ public class RelativeStrengthIndex {
       if (adjusted_date == null) {
         return null;
       }
-      date = GlobalConfigs.getDateFormat().format(adjusted_date.getTime());
+      date = GConfigs.getDateFormat().format(adjusted_date.getTime());
     }
 
     return rsi.get(date);
@@ -41,7 +41,7 @@ public class RelativeStrengthIndex {
           ConcurrentHashMap<String, Object[]> rawDataMap,
           HashMap<String, Float> rsi) throws ParseException {
     Calendar start_date = StatCalculator.getFirstValidDate(rawDataMap);
-    Object[] raw_data = rawDataMap.get(GlobalConfigs.getDateFormat().format(start_date.getTime()));
+    Object[] raw_data = rawDataMap.get(GConfigs.getDateFormat().format(start_date.getTime()));
     if (raw_data == null) {
       System.err.println("Cannot find first valid date");
       return;
@@ -54,7 +54,7 @@ public class RelativeStrengthIndex {
 
     while (buffer > 0) {
       start_date.add(Calendar.DAY_OF_MONTH, 1);
-      raw_data = rawDataMap.get(GlobalConfigs.getDateFormat().format(start_date.getTime()));
+      raw_data = rawDataMap.get(GConfigs.getDateFormat().format(start_date.getTime()));
       if (raw_data == null) {
         buffer--;
       } else {
@@ -71,7 +71,7 @@ public class RelativeStrengthIndex {
         p_avg_gain = (p_avg_gain * (rsiDuration - 1) + gain) / rsiDuration;
         rs = p_avg_loss == 0 ? 999 : p_avg_gain / p_avg_loss;
         t_rsi = (100 - 100 / (1 + rs));
-        rsi.put(GlobalConfigs.getDateFormat().format(start_date.getTime()), t_rsi);
+        rsi.put(GConfigs.getDateFormat().format(start_date.getTime()), t_rsi);
       }
     }
   }

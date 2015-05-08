@@ -1,0 +1,119 @@
+package calculator;
+
+import static calculator.StatCalculator.getUsableDate;
+import core.GConfigs;
+import core.GConfigs.RAW_DATA_INDEX;
+import java.text.ParseException;
+import java.util.Calendar;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class ADTM {
+
+  public static Object getMAADTM(String date, int maDuration, int sumBackDuration,
+          ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException {
+    SMovingAverage ma = new SMovingAverage(maDuration);
+    Calendar start_date = getUsableDate(date, rawDataMap, maDuration, maDuration, true, true);
+    Calendar end_date = getUsableDate(date, rawDataMap, maDuration, maDuration, false, true);
+    if (start_date == null || end_date == null) {
+      return null;
+    }
+
+    while (!start_date.after(end_date)) {
+      ma.newNum((double) getADTM(GConfigs.cldToString(start_date),
+              sumBackDuration, rawDataMap));
+      start_date.add(Calendar.DAY_OF_MONTH, 1);
+    }
+
+    return ma.getAvg();
+  }
+
+  public static Object getADTM(String date, int sumBackDuration,
+          ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException {
+
+    float stm = sumBack(date, sumBackDuration, sumBackDuration, rawDataMap, new DTM());
+    float sbm = sumBack(date, sumBackDuration, sumBackDuration, rawDataMap, new DBM());
+
+    double adtm;
+    if (stm > sbm) {
+      adtm = (stm - sbm) / stm;
+    } else if (stm == sbm) {
+      adtm = 0;
+    } else {
+      adtm = (stm - sbm) / sbm;
+    }
+    return adtm;
+  }
+
+  public static float sumBack(String date, int distance, int duration,
+          ConcurrentHashMap<String, Object[]> rawDataMap, Method m) throws ParseException {
+    Calendar start_date = getUsableDate(date, rawDataMap, distance, duration, true, true);
+    Calendar end_date = getUsableDate(date, rawDataMap, distance, duration, false, true);
+    if (start_date == null || end_date == null) {
+      return 0;
+    }
+    float sum = m.execute(GConfigs.getDateFormat().format(start_date.getTime()), rawDataMap);
+
+    start_date.add(Calendar.DAY_OF_MONTH, 1);
+    while (!start_date.after(end_date)) {
+      Object[] row = rawDataMap.get(GConfigs.getDateFormat().format(start_date.getTime()));
+      if (row != null) {
+        //Use highest as high, lowest as low
+        sum += m.execute(GConfigs.getDateFormat().format(start_date.getTime()), rawDataMap);
+      }
+      start_date.add(Calendar.DAY_OF_MONTH, 1);
+    }
+
+    return sum;
+  }
+
+  public interface Method {
+
+    public float execute(String date, ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException;
+  }
+
+  public static class DTM implements Method {
+
+    @Override
+    public float execute(String date, ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException {
+      float dtm;
+      Object[] raw_data = rawDataMap.get(date);
+      float open = (float) raw_data[RAW_DATA_INDEX.OPEN.ordinal()];
+      float high = (float) raw_data[RAW_DATA_INDEX.HIGH.ordinal()];
+      Calendar yesterday = StatCalculator.getUsableDate(date, rawDataMap, 1, 1, true, true);
+      if (yesterday == null) {
+        return 0;
+      }
+      raw_data = rawDataMap.get(GConfigs.getDateFormat().format(yesterday.getTime()));
+      float yopen = (float) raw_data[RAW_DATA_INDEX.OPEN.ordinal()];
+      if (open <= yopen) {
+        dtm = 0;
+      } else {
+        dtm = Math.max((high - open), (open - yopen));
+      }
+      return dtm;
+    }
+  }
+
+  public static class DBM implements Method {
+
+    @Override
+    public float execute(String date, ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException {
+      float dbm;
+      Object[] raw_data = rawDataMap.get(date);
+      float open = (float) raw_data[RAW_DATA_INDEX.OPEN.ordinal()];
+      float low = (float) raw_data[RAW_DATA_INDEX.LOW.ordinal()];
+      Calendar yesterday = StatCalculator.getUsableDate(date, rawDataMap, 1, 1, true, true);
+      if (yesterday == null) {
+        return 0;
+      }
+      raw_data = rawDataMap.get(GConfigs.getDateFormat().format(yesterday.getTime()));
+      float yopen = (float) raw_data[RAW_DATA_INDEX.OPEN.ordinal()];
+      if (open >= yopen) {
+        dbm = 0;
+      } else {
+        dbm = Math.max((open - low), (open - yopen));
+      }
+      return dbm;
+    }
+  }
+}

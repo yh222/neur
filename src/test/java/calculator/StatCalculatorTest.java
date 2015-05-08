@@ -112,15 +112,15 @@ public class StatCalculatorTest {
 
     @Test
     public void testCalculateNominalExtreme() {
-        Object out = getNominalExtreme("MSFT", "2005-12-21", raw_data_map, 0, 7, true);
+        Object out = Extreme.getNominalExtreme("MSFT", "2005-12-21", raw_data_map, 0, 7, true);
         System.out.println(out);
         assertTrue(out.equals("Very_High"));
 
-        out = getNominalExtreme("MSFT", "2005-12-21", raw_data_map, 0, 8, false);
+        out = Extreme.getNominalExtreme("MSFT", "2005-12-21", raw_data_map, 0, 8, false);
         System.out.println(out);
         assertTrue(out.equals("Little_Low"));
 
-        out = getNominalExtreme("MSFT", "2006-01-04", raw_data_map, 6, 6, true);
+        out = Extreme.getNominalExtreme("MSFT", "2006-01-04", raw_data_map, 6, 6, true);
         System.out.println(out);
         assertTrue(out.equals("High"));
     }
@@ -139,11 +139,11 @@ public class StatCalculatorTest {
 
     @Test
     public void testCalculateCandleUnitForDay() {
-        String out = getCandleUnitForDay("MSFT", "2005-12-20", raw_data_map, 1);
+        String out = CandleStick.getCandleUnitForDay("MSFT", "2005-12-20", raw_data_map, 1);
         System.out.println(out);
         assertTrue(out.equals("StarW"));
         
-        out = getCandleUnitForDay("MSFT", "2005-12-19", raw_data_map, 1);
+        out = CandleStick.getCandleUnitForDay("MSFT", "2005-12-19", raw_data_map, 1);
         System.out.println(out);
         assertTrue(out.equals("ShortWD"));
     }

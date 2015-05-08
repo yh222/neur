@@ -6,10 +6,10 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.logging.*;
-import core.GlobalConfigs;
+import core.GConfigs;
 import calculator.StatCalculator;
-import static core.GlobalConfigs.DEFAULT_START_DATE;
-import static core.GlobalConfigs.RESOURCE_PATH;
+import static core.GConfigs.DEFAULT_START_DATE;
+import static core.GConfigs.RESOURCE_PATH;
 import java.text.ParseException;
 import java.util.concurrent.TimeUnit;
 
@@ -34,7 +34,7 @@ public class STKCSVDownloader {
     ArrayList<String> instruments = codeList;
     final Calendar today = Calendar.getInstance();
     for (String code : instruments) {
-      String file_path = RESOURCE_PATH + GlobalConfigs.MODEL_TYPES.STK.name() + "//" + code + "//" + code + type + ".csv";
+      String file_path = RESOURCE_PATH + GConfigs.MODEL_TYPES.STK.name() + "//" + code + "//" + code + type + ".csv";
       Calendar start_date = Calendar.getInstance();
 
       if (isUpToDate(start_date, code, file_path)) {
@@ -70,7 +70,7 @@ public class STKCSVDownloader {
 
   public static boolean isUpToDate(Calendar start_date, String code, String file_path) {
     try {
-      start_date.setTime(GlobalConfigs.getDateFormat().parse(DEFAULT_START_DATE));
+      start_date.setTime(GConfigs.getDateFormat().parse(DEFAULT_START_DATE));
     } catch (ParseException ex) {
       Logger.getLogger(STKCSVDownloader.class.getName()).log(Level.SEVERE, null, ex);
     }
@@ -92,9 +92,9 @@ public class STKCSVDownloader {
         }
 
         if (last_line.length() > 10) {
-          start_date.setTime(GlobalConfigs.getDateFormat().parse(last_line.substring(0, 10)));
+          start_date.setTime(GConfigs.getDateFormat().parse(last_line.substring(0, 10)));
           start_date.add(Calendar.DATE, 1);
-          if (GlobalConfigs.getDateFormat().format(start_date.getTime()).equals(GlobalConfigs.getDateFormat().format(Calendar.getInstance().getTime()))) {
+          if (GConfigs.getDateFormat().format(start_date.getTime()).equals(GConfigs.getDateFormat().format(Calendar.getInstance().getTime()))) {
             //if the date is today, skip
             System.out.println(code + " is up to date, skip.");
             return true;
@@ -173,10 +173,10 @@ public class STKCSVDownloader {
   }
 
   public static void main(String[] args) {
-    STKCSVDownloader.updateRawDataFromYahoo("d", GlobalConfigs.INSTRUMENT_CODES);
-    STKCSVDownloader.updateRawDataFromYahoo("d", GlobalConfigs.INDICE_CODES);
+    STKCSVDownloader.updateRawDataFromYahoo("d", GConfigs.INSTRUMENT_CODES);
+    STKCSVDownloader.updateRawDataFromYahoo("d", GConfigs.INDICE_CODES);
     //Update dividend data
-    STKCSVDownloader.updateRawDataFromYahoo("v", GlobalConfigs.INSTRUMENT_CODES);
+    STKCSVDownloader.updateRawDataFromYahoo("v", GConfigs.INSTRUMENT_CODES);
   }
 
 }

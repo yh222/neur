@@ -1,6 +1,6 @@
 package core;
 
-import core.GlobalConfigs.MODEL_TYPES;
+import core.GConfigs.MODEL_TYPES;
 import datapreparer.valuemaker.STKClassValueMaker;
 import datapreparer.valuemaker.STKTrainingValueMaker;
 import java.io.BufferedWriter;
@@ -14,9 +14,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import datapreparer.ArffHeadBuilder;
 import datapreparer.RawDataLoader;
-import static core.GlobalConfigs.RESOURCE_PATH;
+import static core.GConfigs.RESOURCE_PATH;
 import java.util.LinkedHashMap;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Generate training data by raw .csv data downloaded by CSVDownloader
@@ -32,23 +34,66 @@ public class TrainingFileGenerator {
   }
 
   //static ConcurrentHashMap<String, ArrayList> m_TrainingDataMap = new ConcurrentHashMap();
-  public void generateTrainingData(boolean writeToFile, boolean createHeaders) {
-    ArrayList<String> instruments = GlobalConfigs.INSTRUMENT_CODES;
+  public void generateTrainingData(boolean createHeaders) {
+    ArrayList<String> instruments = GConfigs.INSTRUMENT_CODES;
     System.out.println("Starting to generate training data.");
     //The code currently being processed
     //String currentCode;
+    ExecutorService executor = Executors.newFixedThreadPool(6);
     for (String code : instruments) {
+      Runnable worker = new generateDataThread(code, createHeaders);
+      executor.execute(worker);
+//      //currentCode = code;
+//      //Get raw data organized by date for each instrument
+//      ConcurrentHashMap<String, Object[]> raw_data_map = RawDataLoader.loadRawDataFromFile(code,m_TypePath);
+//      STKTrainingValueMaker tvmaker = new STKTrainingValueMaker(code);
+//      ArrayList<LinkedHashMap<String, Object>> training_data = new ArrayList(3000);
+//      //Start data processing
+//      for (String date : raw_data_map.keySet()) {
+//        LinkedHashMap<String, Object> storageRow = new LinkedHashMap();
+//        tvmaker.generateNominalTrainingValues(date, raw_data_map, storageRow);
+//        tvmaker.generateNumericTrainingValues(date, raw_data_map, storageRow);
+//        STKClassValueMaker.generateCalssValues(code, date, raw_data_map, storageRow);
+//
+//        //remove line with null value
+//        //This is for bad entries, not for missing values. Missing values should be filled rather than leave null
+//        if (hasNull(storageRow)) {
+//          continue;
+//        }
+//        training_data.add(storageRow);
+//      }
+//
+//        writeToFile(code, training_data, createHeaders);
+    }
+    executor.shutdown();
+    while (!executor.isTerminated()) {
+    }
+    System.out.println("Training data successfully generated.");
+  }
+
+  private class generateDataThread implements Runnable {
+
+    String m_Code;
+    boolean m_Headers;
+
+    public generateDataThread(String code, boolean headers) {
+      m_Code = code;
+      m_Headers = headers;
+    }
+
+    @Override
+    public void run() {
       //currentCode = code;
       //Get raw data organized by date for each instrument
-      ConcurrentHashMap<String, Object[]> raw_data_map = RawDataLoader.loadRawDataFromFile(code,m_TypePath);
-      STKTrainingValueMaker tvmaker = new STKTrainingValueMaker(code);
+      ConcurrentHashMap<String, Object[]> raw_data_map = RawDataLoader.loadRawDataFromFile(m_Code, m_TypePath);
+      STKTrainingValueMaker tvmaker = new STKTrainingValueMaker(m_Code);
       ArrayList<LinkedHashMap<String, Object>> training_data = new ArrayList(3000);
       //Start data processing
       for (String date : raw_data_map.keySet()) {
         LinkedHashMap<String, Object> storageRow = new LinkedHashMap();
         tvmaker.generateNominalTrainingValues(date, raw_data_map, storageRow);
         tvmaker.generateNumericTrainingValues(date, raw_data_map, storageRow);
-        STKClassValueMaker.generateCalssValues(code, date, raw_data_map, storageRow);
+        STKClassValueMaker.generateCalssValues(m_Code, date, raw_data_map, storageRow);
 
         //remove line with null value
         //This is for bad entries, not for missing values. Missing values should be filled rather than leave null
@@ -58,11 +103,8 @@ public class TrainingFileGenerator {
         training_data.add(storageRow);
       }
 
-      if (writeToFile) {
-        writeToFile(code, training_data, createHeaders);
-      }
+      writeToFile(m_Code, training_data, m_Headers);
     }
-    System.out.println("Training data successfully generated.");
   }
 
   public void writeToFile(String code, ArrayList<LinkedHashMap<String, Object>> training_data, boolean createHeaders) {
@@ -129,7 +171,7 @@ public class TrainingFileGenerator {
     File attCount_file = new File(RESOURCE_PATH + m_TypePath + "attCount");
     try (PrintWriter writer = new PrintWriter(new BufferedWriter(
             new FileWriter(attCount_file, false)))) {
-      GlobalConfigs.ClassTags = new ArrayList();
+      GConfigs.ClassTags = new ArrayList();
       for (String key : keys) {
         writer.println(key);
       }
@@ -138,6 +180,8 @@ public class TrainingFileGenerator {
 
   public static void main(String[] args) {
     TrainingFileGenerator tdg = new TrainingFileGenerator(MODEL_TYPES.STK.name());
-    tdg.generateTrainingData(true, true);
+    tdg.generateTrainingData(true);
+//    TrainingFileGenerator tdg = new TrainingFileGenerator(MODEL_TYPES.FX.name());
+//    tdg.generateTrainingData(true);
   }
 }

@@ -1,7 +1,7 @@
 package core;
 
 import calculator.Performance;
-import core.GlobalConfigs.MODEL_TYPES;
+import core.GConfigs.MODEL_TYPES;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,15 +26,23 @@ public class ProjectSPA {
     optionsList.add(new String[]{"-cost-matrix", "\"" + matrix + "\"",
       "-W", "weka.classifiers.trees.RandomForest", "--", "-I", "40", "-depth", "10"});
 
+    classifierNames.add("weka.classifiers.meta.CostSensitiveClassifier");
+    optionsList.add(new String[]{"-cost-matrix", "\"" + matrix + "\"",
+      "-W", "weka.classifiers.functions.MultilayerPerceptron", "--", "-H", "a", "-N", "200"});
+//    classifierNames.add("weka.classifiers.trees.RandomForest");
+//    optionsList.add(new String[]{"-I", "40", "-depth", "10"});
+//
+//    classifierNames.add("weka.classifiers.functions.MultilayerPerceptron");
+//    optionsList.add(new String[]{"-H", "a", "-N", "150"});
+
 //    classifierNames.add("weka.classifiers.meta.CostSensitiveClassifier");
 //    optionsList.add(new String[]{"-cost-matrix", "\"" + matrix + "\"",
 //      "-W", "weka.classifiers.meta.RotationForest", "--", "-I", "5"});
-
-    int num_folds = 10;
+    int num_folds = 4;
 
     ExecutorService executor = Executors.newFixedThreadPool(6);
 
-    ArrayList<String> instruments = GlobalConfigs.INSTRUMENT_CODES;
+    ArrayList<String> instruments = GConfigs.INSTRUMENT_CODES;
     Performance perf = new Performance(instruments, MODEL_TYPES.STK.name());
     WekaModelBenchamrker benchmarker = new WekaModelBenchamrker(perf, MODEL_TYPES.STK.name());
 

@@ -8,6 +8,7 @@ import java.io.FileReader;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -16,7 +17,7 @@ import java.util.logging.Logger;
 /**
  * global configuration class
  */
-public class GlobalConfigs {
+public class GConfigs {
 
   private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
 
@@ -45,7 +46,10 @@ public class GlobalConfigs {
   public static final int[] WEEK_MULTIPIER_CLASS = new int[]{1, 2, 3, 5};
 
   //Special marker for class attributes. used to seperate them from training values.
-  public static final String CLS = "C_";
+  public static final String NCLS = "NC_";
+  //Marker for numeric class attributes
+  public static final String VCLS = "VC_";  
+  
   // marker for Nominal attributes
   public static final String NOM = "N_";
 
@@ -54,6 +58,16 @@ public class GlobalConfigs {
     STK,
     COMO,
     FX;
+  }
+
+  public static enum RAW_DATA_INDEX {
+
+    DATE,
+    OPEN,
+    HIGH,
+    LOW,
+    CLOSE,
+    VOLUME;
   }
 
   private static int m_ClassCount = 0;
@@ -81,7 +95,7 @@ public class GlobalConfigs {
             new FileReader(new File(RESOURCE_PATH + modelTypePath + "attCount")))) {
       String line;
       while ((line = reader.readLine()) != null) {
-        if (line.regionMatches(0, CLS, 0, CLS.length())) {
+        if (line.regionMatches(0, NCLS, 0, NCLS.length())||line.regionMatches(0, VCLS, 0, VCLS.length())) {
           m_ClassCount++;
           ClassTags.add(line);
         } else {
@@ -89,7 +103,7 @@ public class GlobalConfigs {
         }
       }
     } catch (Exception ex) {
-      Logger.getLogger(GlobalConfigs.class.getName()).log(Level.SEVERE, null, ex);
+      Logger.getLogger(GConfigs.class.getName()).log(Level.SEVERE, null, ex);
     }
   }
 
@@ -108,9 +122,13 @@ public class GlobalConfigs {
 //        }
   }
 
+  public static String cldToString(Calendar cld) {
+    return GConfigs.getDateFormat().format(cld.getTime());
+  }
+
   private static ConcurrentHashMap<String, Float> DailySigMap;
 
-  public static final float getSignificanceDaily(String code) {
+  public static final float getSignificanceDaily() {
     return 0.015f;
 //        if (DailySigMap == null) {
 //            loadSignificanceMaps();
@@ -148,6 +166,7 @@ public class GlobalConfigs {
     if (REVELANT_INDICIES == null) {
       REVELANT_INDICIES = new ConcurrentHashMap();
     }
+    
     if (WIKI_TITTLES == null) {
       WIKI_TITTLES = new ConcurrentHashMap();
     }

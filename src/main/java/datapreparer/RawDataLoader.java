@@ -1,7 +1,9 @@
 package datapreparer;
 
+import core.GConfigs;
+import core.GConfigs.RAW_DATA_INDEX;
 import core.TrainingFileGenerator;
-import static core.GlobalConfigs.RESOURCE_PATH;
+import static core.GConfigs.RESOURCE_PATH;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -30,12 +32,12 @@ public class RawDataLoader {
         while ((line = reader.readLine()) != null) {
           String[] parts = line.split(",");
           // Data order: 0,date 1, open; 2, high; 3, low; 4, close; 5, volume
-          Object[] data = new Object[]{parts[0],
-            Float.parseFloat(parts[1]),
-            Float.parseFloat(parts[2]),
-            Float.parseFloat(parts[3]),
-            Float.parseFloat(parts[4]),
-            Float.parseFloat(parts[5])};
+          Object[] data = new Object[]{parts[RAW_DATA_INDEX.DATE.ordinal()],
+            Float.parseFloat(parts[RAW_DATA_INDEX.OPEN.ordinal()]),
+            Float.parseFloat(parts[RAW_DATA_INDEX.HIGH.ordinal()]),
+            Float.parseFloat(parts[RAW_DATA_INDEX.LOW.ordinal()]),
+            Float.parseFloat(parts[RAW_DATA_INDEX.CLOSE.ordinal()]),
+            Float.parseFloat(parts[RAW_DATA_INDEX.VOLUME.ordinal()])};
           raw_data_map.put(parts[0], data);
         }
       } catch (Exception ex) {

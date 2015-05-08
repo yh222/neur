@@ -1,13 +1,16 @@
 package datapreparer.valuemaker;
 
-import calculator.MovingAverage;
+import calculator.ADTM;
+import calculator.CandleStick;
+import calculator.Extreme;
+import calculator.LWR;
+import calculator.PriceMovingAverage;
 import calculator.RelativeStrengthIndex;
-import static core.GlobalConfigs.DEFAULT_PATH;
-import static core.GlobalConfigs.IXIC;
-import static core.GlobalConfigs.REVELANT_INDICIES;
-import static core.GlobalConfigs.WEEK_MULTIPIER_TRAIN;
+import static core.GConfigs.DEFAULT_PATH;
+import static core.GConfigs.IXIC;
+import static core.GConfigs.WEEK_MULTIPIER_TRAIN;
 import calculator.StatCalculator;
-import core.GlobalConfigs;
+import core.GConfigs;
 import datapreparer.valuemaker.indicie.IndicieValueMaker;
 import static datapreparer.valuemaker.indicie.IndicieValueMaker.loadIndiciePastExtreme;
 import java.io.BufferedReader;
@@ -25,7 +28,7 @@ public class STKTrainingValueMaker {
   private final static int DaysInWeek = 5;
 
   RelativeStrengthIndex m_RSI = new RelativeStrengthIndex();
-  MovingAverage m_MovingAverage = new MovingAverage();
+  PriceMovingAverage m_MovingAverage = new PriceMovingAverage();
   String m_Code;
   //date, value
   ArrayList<String[]> m_DividendData;
@@ -41,16 +44,21 @@ public class STKTrainingValueMaker {
           ConcurrentHashMap<String, Object[]> rawDataMap,
           HashMap<String, Object> storageRow) {
     addMomentums(date, rawDataMap, storageRow);
-    addExtremeValue(date, rawDataMap, storageRow);
+    addSupportResistance(date, rawDataMap, storageRow);
     addClusteredTrends(date, rawDataMap, storageRow);
     addVelocities(date, rawDataMap, storageRow);
-    addCandleChartUnitCounts(m_Code, date, rawDataMap, storageRow);
-    addDividendData(date, storageRow);
-    addIndicieInfulences(date, storageRow);
+    //addCandleChartUnitCounts(date, rawDataMap, storageRow);
+    //addCandlePattern(date, rawDataMap, storageRow);
+    //addDividendData(date, storageRow);
+    //addIndicieInfulences(date, storageRow);
     addEMAs(date, rawDataMap, storageRow);
     addSMAs(date, rawDataMap, storageRow);
+    addSTDs(date, rawDataMap, storageRow);
     addRSIs(date, rawDataMap, storageRow);
     addMomtumDiff(date, rawDataMap, storageRow);
+    addADTM(date, rawDataMap, storageRow);
+    addLWR(date, rawDataMap, storageRow);
+    addMACD(date, rawDataMap, storageRow);
     //addWikiViewCount(date, storageRow);
     addHistoryAvgDiff(date, rawDataMap, storageRow);
   }
@@ -59,7 +67,7 @@ public class STKTrainingValueMaker {
           ConcurrentHashMap<String, Object[]> rawDataMap,
           HashMap<String, Object> storageRow) {
     addSeasonOfYear(date, storageRow);
-    storageRow.put(GlobalConfigs.NOM + "Date", "\"" + date + "\"");
+    storageRow.put(GConfigs.NOM + "Date", "\"" + date + "\"");
     //addDayOfWeek(date, storageRow);
     //addCandleUnitForDay(m_Code, date, rawDataMap, storageRow);
   }
@@ -67,19 +75,24 @@ public class STKTrainingValueMaker {
   private void addMomentums(String date,
           ConcurrentHashMap<String, Object[]> rawDataMap,
           HashMap<String, Object> storageRow) {
-//    storageRow.put("Momentum_0d",
-//            StatCalculator.getMomentum(date, rawDataMap, 0, 0));
-//    storageRow.put("Momentum_1d",
-//            StatCalculator.getMomentum(date, rawDataMap, 1, 0));
-    storageRow.put("Momentum_3d",
-            StatCalculator.getMomentum(date, rawDataMap, 3, 3));
 
-    int days;
-    for (int i = 0; i < WEEK_MULTIPIER_TRAIN.length; i++) {
-      days = WEEK_MULTIPIER_TRAIN[i] * DaysInWeek;
+    int days = 3;
+    for (int i = 0; i < 6; i++) {
       storageRow.put("Momentum_" + days + "d",
-              StatCalculator.getMomentum(date, rawDataMap, days, days));
+              StatCalculator.getMomentum(date, rawDataMap, days, 3));
+      days = days + 3;
     }
+    for (int i = 0; i < 4; i++) {
+      days = days + 10;
+      storageRow.put("Momentum_" + days + "d",
+              StatCalculator.getMomentum(date, rawDataMap, days, 10));
+    }
+    for (int i = 0; i < 3; i++) {
+      days = days + 30;
+      storageRow.put("Momentum_" + days + "d",
+              StatCalculator.getMomentum(date, rawDataMap, days, 30));
+    }
+
   }
 
   private static void addVelocities(String date,
@@ -94,31 +107,44 @@ public class STKTrainingValueMaker {
 
   private void addSeasonOfYear(String date,
           HashMap<String, Object> storageRow) {
-    storageRow.put(GlobalConfigs.NOM + "Season",
+    storageRow.put(GConfigs.NOM + "Season",
             StatCalculator.getSeasonOfYear(date));
   }
 
-  private void addExtremeValue(String date,
+  private void addSupportResistance(String date,
           ConcurrentHashMap<String, Object[]> rawDataMap,
           HashMap<String, Object> storageRow) {
-    int days;
-    for (int i = 0; i < WEEK_MULTIPIER_TRAIN.length; i++) {
-      days = WEEK_MULTIPIER_TRAIN[i] * DaysInWeek;
-      storageRow.put("PastHigh_" + days + "d",
-              StatCalculator.getExtremeInPeriod(
-                      date, rawDataMap, days, days, true));
-    }
 
-    for (int i = 0; i < WEEK_MULTIPIER_TRAIN.length; i++) {
-      days = WEEK_MULTIPIER_TRAIN[i] * DaysInWeek;
-      storageRow.put("PastLow_" + days + "d",
-              StatCalculator.getExtremeInPeriod(
-                      date, rawDataMap, days, days, false));
-    }
+    storageRow.put("Resistance30d",
+            Extreme.getExtremeRatio(
+                    date, rawDataMap, 30, 20, true));
+    storageRow.put("Resistance60d",
+            Extreme.getExtremeRatio(
+                    date, rawDataMap, 60, 45, true));
+    storageRow.put("Resistance120d",
+            Extreme.getExtremeRatio(
+                    date, rawDataMap, 120, 100, true));
+    storageRow.put("Resistance240d",
+            Extreme.getExtremeRatio(
+                    date, rawDataMap, 240, 200, true));
+
+    storageRow.put("Support30d",
+            Extreme.getExtremeRatio(
+                    date, rawDataMap, 30, 20, false));
+    storageRow.put("Support60d",
+            Extreme.getExtremeRatio(
+                    date, rawDataMap, 60, 45, false));
+    storageRow.put("Support120d",
+            Extreme.getExtremeRatio(
+                    date, rawDataMap, 120, 100, false));
+    storageRow.put("Support240d",
+            Extreme.getExtremeRatio(
+                    date, rawDataMap, 240, 200, false));
+
   }
 
   private void addDayOfWeek(String date, HashMap<String, Object> storageRow) {
-    storageRow.put(GlobalConfigs.NOM + "DayOfWeek",
+    storageRow.put(GConfigs.NOM + "DayOfWeek",
             StatCalculator.getDayOfWeek(date));
   }
 
@@ -139,36 +165,39 @@ public class STKTrainingValueMaker {
     }
   }
 
-  private void addCandleChartUnitCounts(String code, String date,
+  private void addCandleChartUnitCounts(String date,
           ConcurrentHashMap<String, Object[]> rawDataMap,
           HashMap<String, Object> storageRow) {
 //    StatCalculator.getCandleChartUnits(code, date, rawDataMap, 7, 7,
 //            storageRow);
-    StatCalculator.getCandleChartUnits(code, date, rawDataMap, 15, 15,
+    CandleStick.getCandleChartUnits(date, rawDataMap, 15, 15,
             storageRow);
-    StatCalculator.getCandleChartUnits(code, date, rawDataMap, 30, 30,
+    CandleStick.getCandleChartUnits(date, rawDataMap, 30, 30,
             storageRow);
 //        StatCalculator.CountCandleChartUnits(code, date, rawDataMap, 60,
 //                storageRow);
   }
 
-  private void addCandleUnitForDay(String code, String date,
+  private void addCandlePattern(String date, ConcurrentHashMap<String, Object[]> rawDataMap, HashMap<String, Object> storageRow) {
+    storageRow.put(GConfigs.NOM + "CandlePattern", CandleStick.getCandlePatternForDay(
+            date, rawDataMap));
+  }
+
+  private void addCandleUnitForDay(String date,
           ConcurrentHashMap<String, Object[]> rawDataMap,
           HashMap<String, Object> storageRow) {
     //int index = TRAINING_VALUES_NOMINAL.CadRead_1d.ordinal();
     for (int i = 1; i <= 3; i++) {
-      storageRow.put(GlobalConfigs.NOM + "CadRead_" + i + "d", StatCalculator.getCandleUnitForDay(code, date, rawDataMap, i));
+      storageRow.put(GConfigs.NOM + "CadRead_" + i + "d", CandleStick.getCandleUnitForDay(date, rawDataMap, i));
     }
   }
 
   private void addDividendData(String date, HashMap<String, Object> storageRow) {
-
     storageRow.put("DividendAmount", StatCalculator.getDividentAmt(
             date, m_DividendData));
 
     storageRow.put("DaysTillNextDividend", StatCalculator.getDaysTillNextDivdnt(
             date, m_DividendData));
-
   }
 
   private void loadDividendData() {
@@ -197,7 +226,7 @@ public class STKTrainingValueMaker {
 
   private void loadWikiViewData() {
     if (m_WikiViewData == null) {
-      File file = new File(DEFAULT_PATH + "wikipedia//" + GlobalConfigs.MODEL_TYPES.STK.name() + "//" + m_Code + "//" + m_Code + "_WikiView.csv");
+      File file = new File(DEFAULT_PATH + "wikipedia//" + GConfigs.MODEL_TYPES.STK.name() + "//" + m_Code + "//" + m_Code + "_WikiView.csv");
       HashMap<String, String> map = new HashMap();
       if (file.isFile()) {
         try (BufferedReader reader
@@ -226,31 +255,10 @@ public class STKTrainingValueMaker {
       days = WEEK_MULTIPIER_TRAIN[i] * DaysInWeek;
       if (calculated_indicie_data == null) {
         storageRow.put("IXICCTrendLow_" + days + "d", 0.0);
-
       } else {
         storageRow.put("IXICCTrendLow_" + days + "d", calculated_indicie_data[i]);
       }
     }
-    String rev_code = REVELANT_INDICIES.get(m_Code);
-    if (rev_code != null) {
-      calculated_indicie_data = loadIndiciePastExtreme(rev_code, date);
-    } else {
-      calculated_indicie_data = new Object[WEEK_MULTIPIER_TRAIN.length];
-      for (int i = 0; i < WEEK_MULTIPIER_TRAIN.length; i++) {
-        calculated_indicie_data[i] = 0.0;
-      }
-    }
-
-    for (int i = 0; i < WEEK_MULTIPIER_TRAIN.length; i++) {
-      days = WEEK_MULTIPIER_TRAIN[i] * DaysInWeek;
-      if (calculated_indicie_data == null) {
-        storageRow.put("REVCTrendLow_" + days + "d", 0.0);
-
-      } else {
-        storageRow.put("REVCTrendLow_" + days + "d", calculated_indicie_data[i]);
-      }
-    }
-
   }
 
   private void addEMAs(String date, ConcurrentHashMap<String, Object[]> rawDataMap, HashMap<String, Object> storageRow) {
@@ -268,8 +276,8 @@ public class STKTrainingValueMaker {
 
   private void addSMAs(String date, ConcurrentHashMap<String, Object[]> rawDataMap, HashMap<String, Object> storageRow) {
     try {
-//      storageRow.put("SMA5", m_MovingAverage.getSMA(date, 5, rawDataMap));
-//      storageRow.put("SMA10", m_MovingAverage.getSMA(date, 10, rawDataMap));
+      storageRow.put("SMA5", m_MovingAverage.getSMA(date, 5, rawDataMap));
+      storageRow.put("SMA10", m_MovingAverage.getSMA(date, 10, rawDataMap));
       storageRow.put("SMA20", m_MovingAverage.getSMA(date, 20, rawDataMap));
       storageRow.put("SMA50", m_MovingAverage.getSMA(date, 50, rawDataMap));
       storageRow.put("SMA100", m_MovingAverage.getSMA(date, 100, rawDataMap));
@@ -279,16 +287,35 @@ public class STKTrainingValueMaker {
     }
   }
 
+  private void addSTDs(String date, ConcurrentHashMap<String, Object[]> rawDataMap, HashMap<String, Object> storageRow) {
+    try {
+      Object std20_20 = m_MovingAverage.getSTD(date, 20, 20, rawDataMap);
+      Object std20_25 = m_MovingAverage.getSTD(date, 25, 20, rawDataMap);
+      storageRow.put("STD20", std20_20);
+      storageRow.put("STDSLP20", StatCalculator.getSlope(std20_25, std20_20, 5));
+      storageRow.put("STD50", m_MovingAverage.getSTD(date, 50, 50, rawDataMap));
+      storageRow.put("STD100", m_MovingAverage.getSTD(date, 100, 100, rawDataMap));
+    } catch (ParseException ex) {
+      Logger.getLogger(STKTrainingValueMaker.class.getName()).log(Level.SEVERE, null, ex);
+    }
+  }
+
   private void addRSIs(String date,
           ConcurrentHashMap<String, Object[]> rawDataMap,
           HashMap<String, Object> storageRow) {
     try {
-      //storageRow.put("RSI10", m_RSI.getRSI(date, 10, 0, rawDataMap));
-      storageRow.put("RSI20", m_RSI.getRSI(date, 20, 0, rawDataMap));
+      storageRow.put("RSI6", m_RSI.getRSI(date, 6, 6, rawDataMap));
+      Object rsi24 = m_RSI.getRSI(date, 24, 24, rawDataMap);
+      Object rsi24_5 = m_RSI.getRSI(date, 24, 29, rawDataMap);
+      storageRow.put("RSI24SLP5", StatCalculator.getSlope(rsi24, rsi24_5, 5));
+      storageRow.put("RSI24", m_RSI.getRSI(date, 24, 24, rawDataMap));
       //storageRow.put("RSI30", m_RSI.getRSI(date, 30, 0, rawDataMap));
-      storageRow.put("RSI50", m_RSI.getRSI(date, 50, 0, rawDataMap));
-      storageRow.put("RSI10_P10", m_RSI.getRSI(date, 10, 10, rawDataMap));
-      storageRow.put("RSI20_P20", m_RSI.getRSI(date, 20, 20, rawDataMap));
+      Object rsi50 = m_RSI.getRSI(date, 50, 50, rawDataMap);
+      Object rsi50_5 = m_RSI.getRSI(date, 55, 50, rawDataMap);
+      storageRow.put("RSI50SLP5", StatCalculator.getSlope(rsi50, rsi50_5, 5));
+      storageRow.put("RSI50", m_RSI.getRSI(date, 50, 50, rawDataMap));
+      storageRow.put("RSI10_P10", m_RSI.getRSI(date, 20, 10, rawDataMap));
+      storageRow.put("RSI20_P20", m_RSI.getRSI(date, 40, 20, rawDataMap));
 
     } catch (ParseException ex) {
       Logger.getLogger(STKTrainingValueMaker.class.getName()).log(Level.SEVERE, null, ex);
@@ -313,12 +340,12 @@ public class STKTrainingValueMaker {
               IXIC, rawDataMap, date, days, days));
     }
 
-    String rev_code = REVELANT_INDICIES.get(m_Code);
-    for (int i = 0; i < WEEK_MULTIPIER_TRAIN.length; i++) {
-      days = WEEK_MULTIPIER_TRAIN[i] * DaysInWeek;
-      storageRow.put("REVMomDiff_" + days, IndicieValueMaker.getMomtumDifference(
-              rev_code, rawDataMap, date, days, days));
-    }
+//    String rev_code = REVELANT_INDICIES.get(m_Code);
+//    for (int i = 0; i < WEEK_MULTIPIER_TRAIN.length; i++) {
+//      days = WEEK_MULTIPIER_TRAIN[i] * DaysInWeek;
+//      storageRow.put("REVMomDiff_" + days, IndicieValueMaker.getMomtumDifference(
+//              rev_code, rawDataMap, date, days, days));
+//    }
   }
 
   private void addHistoryAvgDiff(String date, ConcurrentHashMap<String, Object[]> rawDataMap, HashMap<String, Object> storageRow) {
@@ -341,4 +368,33 @@ public class STKTrainingValueMaker {
             date, rawDataMap, 270, 180));
 
   }
+
+  private void addADTM(String date, ConcurrentHashMap<String, Object[]> rawDataMap, HashMap<String, Object> storageRow) {
+    try {
+      Object adtm23 = ADTM.getADTM(date, 23, rawDataMap);
+      Object maadtm23 = ADTM.getMAADTM(date, 8, 23, rawDataMap);
+      storageRow.put("ADTM23day", adtm23);
+      storageRow.put("MAADTM8ma23day", maadtm23);
+    } catch (ParseException ex) {
+      Logger.getLogger(STKTrainingValueMaker.class.getName()).log(Level.SEVERE, null, ex);
+    }
+  }
+
+  private void addLWR(String date, ConcurrentHashMap<String, Object[]> rawDataMap, HashMap<String, Object> storageRow) {
+    Object lwr9 = LWR.getLWR1(date, rawDataMap, 3, 9, 9);
+    storageRow.put("LWR3ma9day", lwr9);
+//    Object lwr9_14 = LWR.getLWR1(date, rawDataMap, 3, 9, 14);
+//    storageRow.put("LWR3ma9daySLP", StatCalculator.getSlope(lwr9, lwr9_14, 5));
+  }
+
+  private void addMACD(String date, ConcurrentHashMap<String, Object[]> rawDataMap, HashMap<String, Object> storageRow) {
+    try {
+      storageRow.put("MACD12To26m9", m_MovingAverage.getMACD(date, 12, 26, 9, rawDataMap));
+      storageRow.put("DIF12To26", m_MovingAverage.getDIF(date, 12, 26, rawDataMap));
+      storageRow.put("DEA12To26m9", m_MovingAverage.getDEA(date, 12, 26, 9, rawDataMap));
+    } catch (ParseException ex) {
+      Logger.getLogger(STKTrainingValueMaker.class.getName()).log(Level.SEVERE, null, ex);
+    }
+  }
+
 }

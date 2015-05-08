@@ -1,8 +1,9 @@
 package datapreparer.valuemaker.indicie;
 
-import static core.GlobalConfigs.WEEK_MULTIPIER_TRAIN;
+import calculator.Extreme;
+import static core.GConfigs.WEEK_MULTIPIER_TRAIN;
 import calculator.StatCalculator;
-import core.GlobalConfigs.MODEL_TYPES;
+import core.GConfigs.MODEL_TYPES;
 import static datapreparer.RawDataLoader.loadRawDataFromFile;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -24,7 +25,7 @@ public class IndicieValueMaker {
         temp_row = new Object[WEEK_MULTIPIER_TRAIN.length];
         for (int i = 0; i < WEEK_MULTIPIER_TRAIN.length; i++) {
           days = WEEK_MULTIPIER_TRAIN[i] * 7;
-          Object r = StatCalculator.getExtremeInPeriod(
+          Object r = Extreme.getExtremeRatio(
                   d, raw_data_map, days, days, false);
           if (r == null) {
             r = "?";
