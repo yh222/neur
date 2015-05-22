@@ -42,7 +42,7 @@ public class WikipediaViewCountDownloader {
       int rest_count = 10;
       while (start_date.get(Calendar.MONTH) != today.get(Calendar.MONTH)
               || start_date.get(Calendar.YEAR) != today.get(Calendar.YEAR)) {
-        downloadAndSaveWikiCountForMonth(start_date, year_month, GConfigs.WIKI_TITTLES.get(code), new File(file_path));
+//        downloadAndSaveWikiCountForMonth(start_date, year_month, GConfigs.WIKI_TITTLES.get(code), new File(file_path));
         start_date.add(Calendar.MONTH, 1);
         start_date.set(Calendar.DAY_OF_MONTH, 01);
         year_month = format.format(start_date.getTime());

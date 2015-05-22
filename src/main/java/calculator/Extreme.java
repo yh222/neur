@@ -1,13 +1,15 @@
 package calculator;
 
 import core.GConfigs;
+import core.GConfigs.MODEL_TYPES;
 import core.GConfigs.RAW_DATA_INDEX;
 import java.util.Calendar;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Extreme {
 
-  public static Object getExtreme(String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration, boolean getHighest) {
+  public static Object getExtreme(String date, ConcurrentHashMap<String, Object[]> rawDataMap, 
+          int distance, int duration, boolean getHighest) {
     Calendar start_date = StatCalculator.getUsableDate(date, rawDataMap, distance, duration, true, true);
     Calendar end_date = StatCalculator.getUsableDate(date, rawDataMap, distance, duration, false, true);
     if (start_date == null || end_date == null) {
@@ -21,8 +23,8 @@ public class Extreme {
     while (!start_date.after(end_date)) {
       Object[] row = rawDataMap.get(GConfigs.cldToString(start_date));
       if (row != null) {
-        float templow = (float) row[GConfigs.RAW_DATA_INDEX.LOW.ordinal()];
-        float temphigh = (float) row[GConfigs.RAW_DATA_INDEX.HIGH.ordinal()];
+        float templow = (float) row[GConfigs.RAW_DATA_INDEX.CLOSE.ordinal()];
+        float temphigh = (float) row[GConfigs.RAW_DATA_INDEX.CLOSE.ordinal()];
         if (max < temphigh) {
           max = temphigh;
         }
@@ -57,38 +59,38 @@ public class Extreme {
     return ((float)o - start_price) / start_price;
   }
 
-  public static String getNominalExtreme(String code, String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration, boolean getHighest) {
+  public static String getNominalExtreme(MODEL_TYPES type, String date, 
+          ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration, boolean getHighest) {
     Object ext = Extreme.getExtremeRatio(date, rawDataMap, distance, duration, getHighest);
     if (ext == null) {
       return null;
     }
-    return getHighLowClass(code, (float) ext);
+    return getHighLowClass(type, (float) ext);
   }
 
-  public static String getHighLowClass(String code, float in) {
-    float sig = GConfigs.getSignificanceNormal(code);
-//    if (duration <= 7) {
-//      sig /= 2;
-//    }
-    if (Math.abs(in) < sig) {
+  public static String getHighLowClass(MODEL_TYPES type, float v) {
+    float sig = GConfigs.getSignificanceNormal(type);
+
+    
+    if (Math.abs(v) < sig) {
       // (-s...s)
       return "Stay";
-    } else if (in >= 2 * sig && in < 3 * sig) {
+    } else if (v >= 2 * sig && v < 3 * sig) {
       // [2s...3s)
       return "High";
-    } else if (in <= -2 * sig && in > -3 * sig) {
+    } else if (v <= -2 * sig && v > -3 * sig) {
       // (-3s...-2s]
       return "Low";
-    } else if (in >= sig && in < 2 * sig) {
+    } else if (v >= sig && v < 2 * sig) {
       // [s...2s)
       return "Little_High";
-    } else if (in <= -1 * sig && in > -2 * sig) {
+    } else if (v <= -1 * sig && v > -2 * sig) {
       // (-2s...-s]
       return "Little_Low";
-    } else if (in >= 3 * sig) {
+    } else if (v >= 3 * sig) {
       // [3s...inf)
       return "Very_High";
-    } else if (in <= -3 * sig) {
+    } else if (v <= -3 * sig) {
       // (-inf...-3s]
       return "Very_Low";
     } else {

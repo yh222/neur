@@ -34,8 +34,14 @@ public class TrainingFileGenerator {
   }
 
   //static ConcurrentHashMap<String, ArrayList> m_TrainingDataMap = new ConcurrentHashMap();
-  public void generateTrainingData(boolean createHeaders) {
-    ArrayList<String> instruments = GConfigs.INSTRUMENT_CODES;
+  public void generateTrainingData(String type, boolean createHeaders) {
+    ArrayList<String> instruments = null;
+    if (type.equals(MODEL_TYPES.STK.name())) {
+      instruments = GConfigs.INSTRUMENT_CODES;
+    } else if (type.equals(MODEL_TYPES.FX.name())) {
+      instruments = GConfigs.FX_CODES;
+    }
+
     System.out.println("Starting to generate training data.");
     //The code currently being processed
     //String currentCode;
@@ -93,13 +99,12 @@ public class TrainingFileGenerator {
         LinkedHashMap<String, Object> storageRow = new LinkedHashMap();
         tvmaker.generateNominalTrainingValues(date, raw_data_map, storageRow);
         tvmaker.generateNumericTrainingValues(date, raw_data_map, storageRow);
-        STKClassValueMaker.generateCalssValues(m_Code, date, raw_data_map, storageRow);
-
         //remove line with null value
         //This is for bad entries, not for missing values. Missing values should be filled rather than leave null
         if (hasNull(storageRow)) {
           continue;
         }
+        STKClassValueMaker.generateCalssValues(m_Code, date, raw_data_map, storageRow);
         training_data.add(storageRow);
       }
 
@@ -128,6 +133,8 @@ public class TrainingFileGenerator {
       for (LinkedHashMap<String, Object> row : training_data) {
         temp = "";
         for (Object item : row.values()) {
+          if(item==null)
+            item="?";
           temp += (item.toString() + ",");
         }
         //remove last comma and write to file
@@ -179,9 +186,9 @@ public class TrainingFileGenerator {
   }
 
   public static void main(String[] args) {
-    TrainingFileGenerator tdg = new TrainingFileGenerator(MODEL_TYPES.STK.name());
-    tdg.generateTrainingData(true);
 //    TrainingFileGenerator tdg = new TrainingFileGenerator(MODEL_TYPES.FX.name());
-//    tdg.generateTrainingData(true);
+//    tdg.generateTrainingData(MODEL_TYPES.FX.name(), true);
+    TrainingFileGenerator tdg = new TrainingFileGenerator(MODEL_TYPES.STK.name());
+    tdg.generateTrainingData(MODEL_TYPES.STK.name(), true);
   }
 }

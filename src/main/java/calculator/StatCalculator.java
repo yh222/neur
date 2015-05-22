@@ -2,6 +2,7 @@ package calculator;
 
 import core.GConfigs;
 import static core.GConfigs.DEFAULT_START_DATE;
+import core.GConfigs.MODEL_TYPES;
 import core.GConfigs.RAW_DATA_INDEX;
 import java.text.DateFormatSymbols;
 import java.text.ParseException;
@@ -127,21 +128,21 @@ public class StatCalculator {
     return null;
   }
 
-  public static String getNominalRawTrend(String code, String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration) {
+  public static String getNominalRawTrend(MODEL_TYPES type, String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration) {
     Object rt = getMomentum(date, rawDataMap, distance, duration);
     if (rt == null) {
       return null;
     }
-    return Extreme.getHighLowClass(code, (float) rt);
+    return Extreme.getHighLowClass(type, (float) rt);
   }
 
 
-  public static String getNominalCluTrend(String code, String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration, boolean getHighest) {
+  public static String getNominalCluTrend(MODEL_TYPES type, String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration, boolean getHighest) {
     Object ext = getClusteredTrend(date, rawDataMap, distance, duration, getHighest);
     if (ext == null) {
       return null;
     }
-    return Extreme.getHighLowClass(code, (float) ext);
+    return Extreme.getHighLowClass(type, (float) ext);
   }
 
 
@@ -182,7 +183,8 @@ public class StatCalculator {
         }
         //Check validity when count meet
         if (i == count) {
-          if (rawDataMap.get(GConfigs.getDateFormat().format(tempdate.getTime())) == null) {
+          // If this date matches no data, buffer count down and go another loop
+          if (rawDataMap.get(GConfigs.cldToString(tempdate)) == null) {
             buffer--;
             i--;
           } else {
@@ -191,7 +193,7 @@ public class StatCalculator {
         }
         // Need to check everyday if going to use effective days only
         if (useEffevtiveDay) {
-          if (rawDataMap.get(GConfigs.getDateFormat().format(tempdate.getTime())) == null) {
+          if (rawDataMap.get(GConfigs.cldToString(tempdate)) == null) {
             buffer--;
             i--;
           }

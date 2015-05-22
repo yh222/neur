@@ -4,6 +4,7 @@ import calculator.Extreme;
 import static core.GConfigs.WEEK_MULTIPIER_CLASS;
 import calculator.StatCalculator;
 import core.GConfigs;
+import core.GConfigs.MODEL_TYPES;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,23 +24,23 @@ public class STKClassValueMaker {
           ConcurrentHashMap<String, Object[]> rawDataMap,
           HashMap<String, Object> storageRow) {
     int days;
-    
+
     //Debug
     storageRow.put(GConfigs.NCLS + "Highest10d",
-            Extreme.getNominalExtreme(code, date,
+            Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
                     rawDataMap, 0, 10, true));
 
 //    for (int i = 0; i < WEEK_MULTIPIER_CLASS.length; i++) {
 //      days = WEEK_MULTIPIER_CLASS[i] * DaysInWeek;
 //      storageRow.put(GConfigs.NCLS + "Highest" + String.format("%02d", days) + "d",
-//              Extreme.getNominalExtreme(code, date,
+//              Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
 //                      rawDataMap, 0, days, true));
 //    }
 //
 //    for (int i = 0; i < WEEK_MULTIPIER_CLASS.length; i++) {
 //      days = WEEK_MULTIPIER_CLASS[i] * DaysInWeek;
 //      storageRow.put(GConfigs.NCLS + "Lowest" + String.format("%02d", days) + "d",
-//              Extreme.getNominalExtreme(code, date,
+//              Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
 //                      rawDataMap, 0, days, false));
 //    }
   }
@@ -51,7 +52,7 @@ public class STKClassValueMaker {
     for (int i = 0; i < WEEK_MULTIPIER_CLASS.length; i++) {
       days = WEEK_MULTIPIER_CLASS[i] * DaysInWeek;
       storageRow.put(GConfigs.VCLS + "CTrdHigh" + String.format("%02d", days) + "d",
-              StatCalculator.getNominalCluTrend(code, date,
+              StatCalculator.getNominalCluTrend(MODEL_TYPES.STK, date,
                       rawDataMap, 0, days, true));
 
     }
@@ -59,7 +60,7 @@ public class STKClassValueMaker {
     for (int i = 0; i < WEEK_MULTIPIER_CLASS.length; i++) {
       days = WEEK_MULTIPIER_CLASS[i] * DaysInWeek;
       storageRow.put(GConfigs.VCLS + "CTrdLow" + String.format("%02d", days) + "d",
-              StatCalculator.getNominalCluTrend(code, date,
+              StatCalculator.getNominalCluTrend(MODEL_TYPES.STK, date,
                       rawDataMap, 0, days, false));
     }
   }
@@ -72,6 +73,9 @@ public class STKClassValueMaker {
             Extreme.getExtremeRatio(date,
                     rawDataMap, 0, 10, true));
 
+    storageRow.put(GConfigs.VCLS + "Highest10dRawV",
+            Extreme.getExtreme(date,
+                    rawDataMap, 0, 10, true));    
 //    for (int i = 0; i < WEEK_MULTIPIER_CLASS.length; i++) {
 //      days = WEEK_MULTIPIER_CLASS[i] * DaysInWeek;
 //      storageRow.put(GConfigs.VCLS +"Highest" + String.format("%02d", days) + "dV",

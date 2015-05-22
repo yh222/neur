@@ -30,8 +30,12 @@ public class PriceMovingAverage {
       return null;
     }
     float p = (float) raw_data[RAW_DATA_INDEX.CLOSE.ordinal()];
-    float ema = (float) getRawEMA(date, emaDuration, rawDataMap);
-    return p / ema;
+    Float ema = getRawEMA(date, emaDuration, rawDataMap);
+    if (ema == null) {
+      return ema;
+    } else {
+      return p / (float) ema;
+    }
   }
 
   public Float getRawEMA(String date, int emaDuration,
@@ -53,17 +57,24 @@ public class PriceMovingAverage {
       return null;
     }
     float p = (float) raw_data[RAW_DATA_INDEX.CLOSE.ordinal()];
-    float sma = (float) getRawSMA(date, smaDuration, rawDataMap);
-    return p / sma;
+    Float sma = getRawSMA(date, smaDuration, rawDataMap);
+    if (sma == null) {
+      return sma;
+    } else {
+      return p / (float) sma;
+    }
   }
 
-  public float getRawSMA(String date, int smaDuration,
+  public Float getRawSMA(String date, int smaDuration,
           ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException {
     HashMap<String, Float> sma = m_SMAMap.get(smaDuration);
     if (sma == null) {
       m_SMAMap.put(smaDuration, new HashMap());
       sma = m_SMAMap.get(smaDuration);
       calculateSMA(smaDuration, rawDataMap, sma);
+    }
+    if (sma.get(date) == null) {
+      return sma.get(date);
     }
     return sma.get(date);
   }

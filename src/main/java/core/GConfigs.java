@@ -26,7 +26,7 @@ public class GConfigs {
   }
 
   //Default start date for data download
-  public static final String DEFAULT_START_DATE = "2008-01-01";
+  public static final String DEFAULT_START_DATE = "2014-01-01";
 
   // Global Value:  project path
   public static final String DEFAULT_PATH = "D:\\Documents\\NetBeansProjects\\ProjectSPA\\";
@@ -35,11 +35,13 @@ public class GConfigs {
   public static final String TEMP_PATH = DEFAULT_PATH + "temp\\";
   public static final String REPORT_PATH = DEFAULT_PATH + "reports\\";
 
-  public static final ArrayList<String> INSTRUMENT_CODES = loadInstrumentCodes(DEFAULT_PATH + "resources\\STK\\instrument_list.txt");
-  public static final ArrayList<String> INDICE_CODES = loadInstrumentCodes(DEFAULT_PATH + "resources\\STK\\indice_list.txt");
+  public static final ArrayList<String> INSTRUMENT_CODES = loadInstrumentCodes(DEFAULT_PATH + "resources\\STK\\instrument_list.txt", 0);
+  public static final ArrayList<String> INDICE_CODES = loadInstrumentCodes(DEFAULT_PATH + "resources\\STK\\indice_list.txt", 0);
+  public static final ArrayList<String> FX_CODES = loadInstrumentCodes(DEFAULT_PATH + "resources\\FX\\fx_codes.txt", 0);
 
-  public static ConcurrentHashMap<String, String> REVELANT_INDICIES;
-  public static ConcurrentHashMap<String, String> WIKI_TITTLES;
+  //  public static ConcurrentHashMap<String, String> REVELANT_INDICIES;
+  //  Not using this now
+  //  public static ConcurrentHashMap<String, String> WIKI_TITTLES;
   public static final String IXIC = "^IXIC";
   //public static final String GSPC = "^GSPC";
   public static final int[] WEEK_MULTIPIER_TRAIN = new int[]{2, 4, 10};
@@ -48,8 +50,8 @@ public class GConfigs {
   //Special marker for class attributes. used to seperate them from training values.
   public static final String NCLS = "NC_";
   //Marker for numeric class attributes
-  public static final String VCLS = "VC_";  
-  
+  public static final String VCLS = "VC_";
+
   // marker for Nominal attributes
   public static final String NOM = "N_";
 
@@ -95,7 +97,7 @@ public class GConfigs {
             new FileReader(new File(RESOURCE_PATH + modelTypePath + "attCount")))) {
       String line;
       while ((line = reader.readLine()) != null) {
-        if (line.regionMatches(0, NCLS, 0, NCLS.length())||line.regionMatches(0, VCLS, 0, VCLS.length())) {
+        if (line.regionMatches(0, NCLS, 0, NCLS.length()) || line.regionMatches(0, VCLS, 0, VCLS.length())) {
           m_ClassCount++;
           ClassTags.add(line);
         } else {
@@ -111,8 +113,14 @@ public class GConfigs {
 
   private static ConcurrentHashMap<String, Float> NormalSigMap;
 
-  public static final float getSignificanceNormal(String code) {
-    return 0.04f;
+  public static final float getSignificanceNormal(MODEL_TYPES type) {
+
+    if (type.equals(MODEL_TYPES.FX)) {
+      return 0.004f;
+    } else {
+      return 0.04f;
+    }
+
 //        if (NormalSigMap == null) {
 //            loadSignificanceMaps();
 //        } else if (NormalSigMap.containsKey(code)) {
@@ -162,14 +170,14 @@ public class GConfigs {
 //            }
 //        }
 //    }
-  private static ArrayList<String> loadInstrumentCodes(String path) {
-    if (REVELANT_INDICIES == null) {
-      REVELANT_INDICIES = new ConcurrentHashMap();
-    }
-    
-    if (WIKI_TITTLES == null) {
-      WIKI_TITTLES = new ConcurrentHashMap();
-    }
+  private static ArrayList<String> loadInstrumentCodes(String path, int location) {
+//    if (REVELANT_INDICIES == null) {
+//      REVELANT_INDICIES = new ConcurrentHashMap();
+//    }
+//
+//    if (WIKI_TITTLES == null) {
+//      WIKI_TITTLES = new ConcurrentHashMap();
+//    }
 
     ArrayList<String> codes = new ArrayList();
     int count = 0;
@@ -180,11 +188,11 @@ public class GConfigs {
       while ((line = reader.readLine()) != null) {
         count++;
         split = line.split(",");
-        codes.add(split[0]);
-        if (split.length > 1) {
-          REVELANT_INDICIES.put(split[0], split[1]);
-          WIKI_TITTLES.put(split[0], split[2]);
-        }
+        codes.add(split[location]);
+//        if (split.length > 1) {
+//          REVELANT_INDICIES.put(split[0], split[1]);
+//          WIKI_TITTLES.put(split[0], split[2]);
+//        }
       }
     } catch (FileNotFoundException fe) {
       Logger.getLogger(STKCSVDownloader.class
@@ -194,7 +202,8 @@ public class GConfigs {
               .getName()).log(Level.SEVERE, " error when load " + path, e);
     }
 
-    System.out.println(count + " codes loaded.");
+    //System.out.println(count + " codes loaded.");
     return codes;
   }
+
 }

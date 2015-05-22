@@ -87,11 +87,11 @@ public class STKTrainingValueMaker {
       storageRow.put("Momentum_" + days + "d",
               StatCalculator.getMomentum(date, rawDataMap, days, 10));
     }
-    for (int i = 0; i < 3; i++) {
-      days = days + 30;
-      storageRow.put("Momentum_" + days + "d",
-              StatCalculator.getMomentum(date, rawDataMap, days, 30));
-    }
+//    for (int i = 0; i < 3; i++) {
+//      days = days + 30;
+//      storageRow.put("Momentum_" + days + "d",
+//              StatCalculator.getMomentum(date, rawDataMap, days, 30));
+//    }
 
   }
 
@@ -118,28 +118,28 @@ public class STKTrainingValueMaker {
     storageRow.put("Resistance30d",
             Extreme.getExtremeRatio(
                     date, rawDataMap, 30, 20, true));
-    storageRow.put("Resistance60d",
-            Extreme.getExtremeRatio(
-                    date, rawDataMap, 60, 45, true));
-    storageRow.put("Resistance120d",
-            Extreme.getExtremeRatio(
-                    date, rawDataMap, 120, 100, true));
-    storageRow.put("Resistance240d",
-            Extreme.getExtremeRatio(
-                    date, rawDataMap, 240, 200, true));
+//    storageRow.put("Resistance60d",
+//            Extreme.getExtremeRatio(
+//                    date, rawDataMap, 60, 45, true));
+//    storageRow.put("Resistance120d",
+//            Extreme.getExtremeRatio(
+//                    date, rawDataMap, 120, 100, true));
+//    storageRow.put("Resistance240d",
+//            Extreme.getExtremeRatio(
+//                    date, rawDataMap, 240, 200, true));
 
     storageRow.put("Support30d",
             Extreme.getExtremeRatio(
                     date, rawDataMap, 30, 20, false));
-    storageRow.put("Support60d",
-            Extreme.getExtremeRatio(
-                    date, rawDataMap, 60, 45, false));
-    storageRow.put("Support120d",
-            Extreme.getExtremeRatio(
-                    date, rawDataMap, 120, 100, false));
-    storageRow.put("Support240d",
-            Extreme.getExtremeRatio(
-                    date, rawDataMap, 240, 200, false));
+//    storageRow.put("Support60d",
+//            Extreme.getExtremeRatio(
+//                    date, rawDataMap, 60, 45, false));
+//    storageRow.put("Support120d",
+//            Extreme.getExtremeRatio(
+//                    date, rawDataMap, 120, 100, false));
+//    storageRow.put("Support240d",
+//            Extreme.getExtremeRatio(
+//                    date, rawDataMap, 240, 200, false));
 
   }
 
@@ -267,7 +267,7 @@ public class STKTrainingValueMaker {
 //      storageRow.put("EMA10", m_MovingAverage.getEMA(date, 10, rawDataMap));
       storageRow.put("EMA20", m_MovingAverage.getEMA(date, 20, rawDataMap));
       storageRow.put("EMA50", m_MovingAverage.getEMA(date, 50, rawDataMap));
-      storageRow.put("EMA100", m_MovingAverage.getEMA(date, 100, rawDataMap));
+      //storageRow.put("EMA100", m_MovingAverage.getEMA(date, 100, rawDataMap));
       //storageRow.put("EMA200", m_MovingAverage.getEMA(date, 200, rawDataMap));
     } catch (ParseException ex) {
       Logger.getLogger(STKTrainingValueMaker.class.getName()).log(Level.SEVERE, null, ex);
@@ -280,7 +280,7 @@ public class STKTrainingValueMaker {
       storageRow.put("SMA10", m_MovingAverage.getSMA(date, 10, rawDataMap));
       storageRow.put("SMA20", m_MovingAverage.getSMA(date, 20, rawDataMap));
       storageRow.put("SMA50", m_MovingAverage.getSMA(date, 50, rawDataMap));
-      storageRow.put("SMA100", m_MovingAverage.getSMA(date, 100, rawDataMap));
+     // storageRow.put("SMA100", m_MovingAverage.getSMA(date, 100, rawDataMap));
       //storageRow.put("SMA200", m_MovingAverage.getSMA(date, 200, rawDataMap));
     } catch (ParseException ex) {
       Logger.getLogger(STKTrainingValueMaker.class.getName()).log(Level.SEVERE, null, ex);
@@ -294,7 +294,7 @@ public class STKTrainingValueMaker {
       storageRow.put("STD20", std20_20);
       storageRow.put("STDSLP20", StatCalculator.getSlope(std20_25, std20_20, 5));
       storageRow.put("STD50", m_MovingAverage.getSTD(date, 50, 50, rawDataMap));
-      storageRow.put("STD100", m_MovingAverage.getSTD(date, 100, 100, rawDataMap));
+     // storageRow.put("STD100", m_MovingAverage.getSTD(date, 100, 100, rawDataMap));
     } catch (ParseException ex) {
       Logger.getLogger(STKTrainingValueMaker.class.getName()).log(Level.SEVERE, null, ex);
     }
@@ -355,17 +355,17 @@ public class STKTrainingValueMaker {
     storageRow.put("HistoryAvgDiff30", StatCalculator.getHistoryAvgDiff(
             date, rawDataMap, 30, 30));
 
-    storageRow.put("HistoryAvgDiff90", StatCalculator.getHistoryAvgDiff(
-            date, rawDataMap, 90, 90));
+   // storageRow.put("HistoryAvgDiff90", StatCalculator.getHistoryAvgDiff(
+     //       date, rawDataMap, 90, 90));
 
-    storageRow.put("HistoryAvgDiff90_90", StatCalculator.getHistoryAvgDiff(
-            date, rawDataMap, 180, 90));
+    //storageRow.put("HistoryAvgDiff90_90", StatCalculator.getHistoryAvgDiff(
+    //        date, rawDataMap, 180, 90));
 
-    storageRow.put("HistoryAvgDiff180", StatCalculator.getHistoryAvgDiff(
-            date, rawDataMap, 180, 180));
+   // storageRow.put("HistoryAvgDiff180", StatCalculator.getHistoryAvgDiff(
+     //       date, rawDataMap, 180, 180));
 
-    storageRow.put("HistoryAvgDiff180_90", StatCalculator.getHistoryAvgDiff(
-            date, rawDataMap, 270, 180));
+   // storageRow.put("HistoryAvgDiff180_90", StatCalculator.getHistoryAvgDiff(
+   //         date, rawDataMap, 270, 180));
 
   }
 

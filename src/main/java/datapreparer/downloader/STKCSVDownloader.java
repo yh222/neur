@@ -75,12 +75,12 @@ public class STKCSVDownloader {
       Logger.getLogger(STKCSVDownloader.class.getName()).log(Level.SEVERE, null, ex);
     }
     File file = new File(file_path);
-    
-    File folder=file.getParentFile();
-    if(!folder.isDirectory()){
+
+    File folder = file.getParentFile();
+    if (!folder.isDirectory()) {
       folder.mkdir();
     }
-    
+
     if (file.isFile()) {
 
       try (final BufferedReader reader = new BufferedReader(
@@ -94,8 +94,8 @@ public class STKCSVDownloader {
         if (last_line.length() > 10) {
           start_date.setTime(GConfigs.getDateFormat().parse(last_line.substring(0, 10)));
           start_date.add(Calendar.DATE, 1);
-          if (GConfigs.getDateFormat().format(start_date.getTime()).equals(GConfigs.getDateFormat().format(Calendar.getInstance().getTime()))) {
-            //if the date is today, skip
+          if (GConfigs.cldToString(start_date).equals(GConfigs.cldToString(Calendar.getInstance()))) {
+            //if the date is today, skip G
             System.out.println(code + " is up to date, skip.");
             return true;
           }
