@@ -26,7 +26,7 @@ public class STKClassValueMaker {
     int days;
 
     //Debug
-    storageRow.put(GConfigs.NCLS + "Highest10d",
+    storageRow.put(GConfigs.CLS + "Highest10d",
             Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
                     rawDataMap, 0, 10, true));
 
@@ -51,7 +51,7 @@ public class STKClassValueMaker {
     int days;
     for (int i = 0; i < WEEK_MULTIPIER_CLASS.length; i++) {
       days = WEEK_MULTIPIER_CLASS[i] * DaysInWeek;
-      storageRow.put(GConfigs.VCLS + "CTrdHigh" + String.format("%02d", days) + "d",
+      storageRow.put(GConfigs.CLS + "CTrdHigh" + String.format("%02d", days) + "d",
               StatCalculator.getNominalCluTrend(MODEL_TYPES.STK, date,
                       rawDataMap, 0, days, true));
 
@@ -59,7 +59,7 @@ public class STKClassValueMaker {
 
     for (int i = 0; i < WEEK_MULTIPIER_CLASS.length; i++) {
       days = WEEK_MULTIPIER_CLASS[i] * DaysInWeek;
-      storageRow.put(GConfigs.VCLS + "CTrdLow" + String.format("%02d", days) + "d",
+      storageRow.put(GConfigs.CLS + "CTrdLow" + String.format("%02d", days) + "d",
               StatCalculator.getNominalCluTrend(MODEL_TYPES.STK, date,
                       rawDataMap, 0, days, false));
     }
@@ -69,13 +69,13 @@ public class STKClassValueMaker {
     int days;
 
     //Debug
-    storageRow.put(GConfigs.VCLS + "Highest10dV",
+    storageRow.put(GConfigs.CLS + "Highest10dV",
             Extreme.getExtremeRatio(date,
                     rawDataMap, 0, 10, true));
 
-    storageRow.put(GConfigs.VCLS + "Highest10dRawV",
-            Extreme.getExtreme(date,
-                    rawDataMap, 0, 10, true));    
+//    storageRow.put(GConfigs.CLS + "Highest10d_series",
+//            Extreme.getExtreme(date,
+//                    rawDataMap, 0, 10, true));    
 //    for (int i = 0; i < WEEK_MULTIPIER_CLASS.length; i++) {
 //      days = WEEK_MULTIPIER_CLASS[i] * DaysInWeek;
 //      storageRow.put(GConfigs.VCLS +"Highest" + String.format("%02d", days) + "dV",

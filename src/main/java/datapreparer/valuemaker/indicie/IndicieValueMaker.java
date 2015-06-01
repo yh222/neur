@@ -4,7 +4,7 @@ import calculator.Extreme;
 import static core.GConfigs.WEEK_MULTIPIER_TRAIN;
 import calculator.StatCalculator;
 import core.GConfigs.MODEL_TYPES;
-import static datapreparer.RawDataLoader.loadRawDataFromFile;
+import static datapreparer.RawDataLoader.loadRawData;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class IndicieValueMaker {
@@ -16,7 +16,7 @@ public class IndicieValueMaker {
 
     if (!indicieExtremes.containsKey(indicieCode)) {
       ConcurrentHashMap<String, Object[]> raw_data_map
-              = loadRawDataFromFile(indicieCode, MODEL_TYPES.STK.name() + "//");
+              = loadRawData(indicieCode, MODEL_TYPES.STK.name() + "//");
       ConcurrentHashMap date_to_data = new ConcurrentHashMap();
 
       Object[] temp_row;
@@ -46,7 +46,7 @@ public class IndicieValueMaker {
           int duration) {
     ConcurrentHashMap<String, Object[]> rawDataMap_ind = indicieRawData.get(indicieCode);
     if (rawDataMap_ind == null) {
-      rawDataMap_ind = loadRawDataFromFile(indicieCode, MODEL_TYPES.STK.name() + "//");
+      rawDataMap_ind = loadRawData(indicieCode, MODEL_TYPES.STK.name() + "//");
       indicieRawData.put(indicieCode, rawDataMap_ind);
     }
 

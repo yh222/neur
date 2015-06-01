@@ -1,10 +1,10 @@
 package calculator;
 
-import core.GConfigs;
 import java.text.ParseException;
-import java.util.Calendar;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import util.MyUtils;
 
 public class RelativeStrengthIndex {
 
@@ -26,12 +26,12 @@ public class RelativeStrengthIndex {
     }
 
     if (distance != 0) {
-      Calendar adjusted_date = StatCalculator.getUsableDate(date,
+      LocalDate adjusted_date = MyUtils.getUsableDate(date,
               rawDataMap, distance, 0, true, false);
       if (adjusted_date == null) {
         return null;
       }
-      date = GConfigs.getDateFormat().format(adjusted_date.getTime());
+      date = adjusted_date.toString();
     }
 
     return rsi.get(date);
@@ -40,8 +40,8 @@ public class RelativeStrengthIndex {
   private void calculateRSI(int rsiDuration,
           ConcurrentHashMap<String, Object[]> rawDataMap,
           HashMap<String, Float> rsi) throws ParseException {
-    Calendar start_date = StatCalculator.getFirstValidDate(rawDataMap);
-    Object[] raw_data = rawDataMap.get(GConfigs.getDateFormat().format(start_date.getTime()));
+    LocalDate start_date = StatCalculator.getFirstValidDate(rawDataMap);
+    Object[] raw_data = rawDataMap.get(start_date.toString());
     if (raw_data == null) {
       System.err.println("Cannot find first valid date");
       return;
@@ -53,8 +53,8 @@ public class RelativeStrengthIndex {
     int buffer = 10;
 
     while (buffer > 0) {
-      start_date.add(Calendar.DAY_OF_MONTH, 1);
-      raw_data = rawDataMap.get(GConfigs.getDateFormat().format(start_date.getTime()));
+      start_date=start_date.plusDays(1);
+      raw_data = rawDataMap.get(start_date.toString());
       if (raw_data == null) {
         buffer--;
       } else {
@@ -71,7 +71,7 @@ public class RelativeStrengthIndex {
         p_avg_gain = (p_avg_gain * (rsiDuration - 1) + gain) / rsiDuration;
         rs = p_avg_loss == 0 ? 999 : p_avg_gain / p_avg_loss;
         t_rsi = (100 - 100 / (1 + rs));
-        rsi.put(GConfigs.getDateFormat().format(start_date.getTime()), t_rsi);
+        rsi.put(start_date.toString(), t_rsi);
       }
     }
   }

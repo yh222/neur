@@ -4,14 +4,13 @@ import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Calendar;
+import java.time.LocalDate;
 import java.util.logging.*;
 import core.GConfigs;
-import calculator.StatCalculator;
-import static core.GConfigs.DEFAULT_START_DATE;
 import static core.GConfigs.RESOURCE_PATH;
-import java.text.ParseException;
-import java.util.concurrent.TimeUnit;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoField;
+import util.MyUtils;
 
 /**
  * Download raw instrument data from web-server in .csv format
@@ -32,31 +31,31 @@ public class STKCSVDownloader {
     }
 
     ArrayList<String> instruments = codeList;
-    final Calendar today = Calendar.getInstance();
+    final LocalDate today = LocalDate.now();
     for (String code : instruments) {
       String file_path = RESOURCE_PATH + GConfigs.MODEL_TYPES.STK.name() + "//" + code + "//" + code + type + ".csv";
-      Calendar start_date = Calendar.getInstance();
+      LocalDate start_date = LocalDate.now();
 
-      if (isUpToDate(start_date, code, file_path)) {
+      if (isUpToDate(code, file_path)) {
         continue;
       }
 
       try {
-        int dayDiff = (int) StatCalculator.getDateDiff(start_date.getTime(), today.getTime(), TimeUnit.DAYS);
+        int dayDiff = today.compareTo(start_date);
 
         if (!yhooParameter.equals("")) {
           //download data from yahoo
           URL url = new URL("http://ichart.finance.yahoo.com/table.csv?s="
-                  + code + "&a=" + start_date.get(Calendar.MONTH) + "&b=" + start_date.get(Calendar.DAY_OF_MONTH) + "&c=" + start_date.get(Calendar.YEAR)
-                  + "&d=" + today.get(Calendar.MONTH) + "&e=" + today.get(Calendar.DAY_OF_MONTH) + "&f=" + today.get(Calendar.YEAR)
+                  + code + "&a=" + start_date.get(ChronoField.MONTH_OF_YEAR) + "&b=" + start_date.get(ChronoField.DAY_OF_MONTH) + "&c=" + start_date.get(ChronoField.YEAR)
+                  + "&d=" + today.get(ChronoField.MONTH_OF_YEAR) + "&e=" + today.get(ChronoField.DAY_OF_MONTH) + "&f=" + today.get(ChronoField.YEAR)
                   + "&g=" + yhooParameter + "&ignore=.csv");
           System.out.println("Downloading data for " + code + " from " + url);
           downloadDataFromURL(url, new File(file_path), true, dayDiff);
         } else {
           //download from quotemedia
           URL url = new URL("http://app.quotemedia.com/quotetools/getHistoryDownload.csv?&webmasterId=501&startDay="
-                  + start_date.get(Calendar.DAY_OF_MONTH) + "&startMonth=" + start_date.get(Calendar.MONTH) + "&startYear=" + start_date.get(Calendar.YEAR)
-                  + "&endDay=" + today.get(Calendar.DAY_OF_MONTH) + "&endMonth=" + today.get(Calendar.MONTH) + "&endYear=" + today.get(Calendar.YEAR)
+                  + start_date.get(ChronoField.DAY_OF_MONTH) + "&startMonth=" + start_date.get(ChronoField.MONTH_OF_YEAR) + "&startYear=" + start_date.get(ChronoField.YEAR)
+                  + "&endDay=" + today.get(ChronoField.DAY_OF_MONTH) + "&endMonth=" + today.get(ChronoField.MONTH_OF_YEAR) + "&endYear=" + today.get(ChronoField.YEAR)
                   + "&isRanged=false&symbol=" + code + "&ignore=.csv");
           System.out.println("Downloading data for " + code + " from " + url);
           downloadDataFromURL(url, new File(file_path), false, dayDiff);
@@ -68,35 +67,26 @@ public class STKCSVDownloader {
     }
   }
 
-  public static boolean isUpToDate(Calendar start_date, String code, String file_path) {
-    try {
-      start_date.setTime(GConfigs.getDateFormat().parse(DEFAULT_START_DATE));
-    } catch (ParseException ex) {
-      Logger.getLogger(STKCSVDownloader.class.getName()).log(Level.SEVERE, null, ex);
-    }
+  // Check if the raw file of an instument is up to date
+  public static boolean isUpToDate(String code, String file_path) {
     File file = new File(file_path);
-
-    File folder = file.getParentFile();
-    if (!folder.isDirectory()) {
-      folder.mkdir();
-    }
-
+    MyUtils.findOrCreateFolder(file.getParentFile().getAbsolutePath());
     if (file.isFile()) {
-
       try (final BufferedReader reader = new BufferedReader(
               new FileReader(file))) {
         String line;
         String last_line = "";
+        // keep reading until the last line
         while ((line = reader.readLine()) != null) {
           last_line = line;
         }
 
         if (last_line.length() > 10) {
-          start_date.setTime(GConfigs.getDateFormat().parse(last_line.substring(0, 10)));
-          start_date.add(Calendar.DATE, 1);
-          if (GConfigs.cldToString(start_date).equals(GConfigs.cldToString(Calendar.getInstance()))) {
+          LocalDate start_date = LocalDate.parse(last_line.substring(0, 10), DateTimeFormatter.ISO_LOCAL_DATE);
+         start_date= start_date.plusDays(1);
+          if (start_date.toString().equals(LocalDate.now().toString())) {
             //if the date is today, skip G
-            System.out.println(code + " is up to date, skip.");
+            System.out.println(code + " is up to date.");
             return true;
           }
         }

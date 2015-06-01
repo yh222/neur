@@ -4,7 +4,6 @@ import static core.GConfigs.MODEL_PATH;
 import core.GConfigs.MODEL_TYPES;
 import static core.GConfigs.REPORT_PATH;
 import static core.GConfigs.TEMP_PATH;
-import datapreparer.ArffHeadBuilder;
 import datapreparer.RawDataLoader;
 import datapreparer.valuemaker.STKTrainingValueMaker;
 import java.io.BufferedWriter;
@@ -227,7 +226,7 @@ public class Predictor {
    * then immediately load the file as Istances object for further prediction.
    */
   private Instances makeTestingValues(String code, ArrayList<String> dates) throws IOException, Exception {
-    ConcurrentHashMap<String, Object[]> raw_data_map = RawDataLoader.loadRawDataFromFile(code, m_TypePath);
+    ConcurrentHashMap<String, Object[]> raw_data_map = RawDataLoader.loadRawData(code, m_TypePath);
     STKTrainingValueMaker tvmaker = new STKTrainingValueMaker(code);
     ArrayList<LinkedHashMap<String, Object>> prediction_data = new ArrayList();
     LinkedHashMap<String, Object> storageRow;
@@ -242,7 +241,7 @@ public class Predictor {
     }
 
     String arff = TEMP_PATH + code + "_Prediction.arff";
-    ArffHeadBuilder.buildArffHeader(prediction_data.get(0).keySet(), arff, code);
+    //ArffHeadBuilder.buildArffHeader(prediction_data.get(0).keySet(), arff, code);
     PrintWriter arffWriter = new PrintWriter(new BufferedWriter(
             new FileWriter(arff, true)));
     for (LinkedHashMap<String, Object> row : prediction_data) {
@@ -266,7 +265,7 @@ public class Predictor {
               || startDate.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) {
         i--;
       } else {
-        dates.add(GConfigs.getDateFormat().format(startDate.getTime()));
+       // dates.add(GConfigs.getDateFormat().format(startDate.getTime()));
       }
       startDate.add(Calendar.DAY_OF_MONTH, -1);
     }

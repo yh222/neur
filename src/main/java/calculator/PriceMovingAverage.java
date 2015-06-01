@@ -1,13 +1,12 @@
 package calculator;
 
-import static calculator.StatCalculator.getUsableDate;
-import core.GConfigs;
-import core.GConfigs.RAW_DATA_INDEX;
+import core.GConfigs.YAHOO_DATA_INDEX;
 import java.text.ParseException;
-import java.util.Calendar;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
+import util.MyUtils;
 
 public class PriceMovingAverage {
 
@@ -29,7 +28,7 @@ public class PriceMovingAverage {
     if (raw_data == null) {
       return null;
     }
-    float p = (float) raw_data[RAW_DATA_INDEX.CLOSE.ordinal()];
+    float p = (float) raw_data[YAHOO_DATA_INDEX.CLOSE.ordinal()];
     Float ema = getRawEMA(date, emaDuration, rawDataMap);
     if (ema == null) {
       return ema;
@@ -56,7 +55,7 @@ public class PriceMovingAverage {
     if (raw_data == null) {
       return null;
     }
-    float p = (float) raw_data[RAW_DATA_INDEX.CLOSE.ordinal()];
+    float p = (float) raw_data[YAHOO_DATA_INDEX.CLOSE.ordinal()];
     Float sma = getRawSMA(date, smaDuration, rawDataMap);
     if (sma == null) {
       return sma;
@@ -82,15 +81,15 @@ public class PriceMovingAverage {
   // Standard deviation, the bone of bollinger channel
   public Float getSTD(String date, int distance, int stdDuration,
           ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException {
-    Calendar start_date = StatCalculator.getUsableDate(
+    LocalDate start_date = MyUtils.getUsableDate(
             date, rawDataMap, distance, stdDuration, false, true);
     if (start_date == null) {
       return null;
     }
-    String start_day = GConfigs.cldToString(start_date);
+    String start_day = start_date.toString();
 
     Object[] raw_data = rawDataMap.get(start_day);
-    float p = (float) raw_data[RAW_DATA_INDEX.CLOSE.ordinal()];
+    float p = (float) raw_data[YAHOO_DATA_INDEX.CLOSE.ordinal()];
     HashMap<String, Float> std = m_STDMap.get(stdDuration);
     if (std == null) {
       calculateSTD(stdDuration, rawDataMap);
@@ -114,20 +113,20 @@ public class PriceMovingAverage {
 
   public Float getDEA(String date, int shortD, int longD, int midD,
           ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException {
-    Calendar start_date = getUsableDate(date, rawDataMap, midD, midD, true, true);
-    Calendar end_date = getUsableDate(date, rawDataMap, midD, midD, false, true);
+    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, midD, midD, true, true);
+    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, midD, midD, false, true);
     if (start_date == null || end_date == null) {
       return null;
     }
     EMovingAverage ema = new EMovingAverage(2.0 / (1.0 + midD));
     float v = 0;
-    while (!start_date.after(end_date)) {
-      Float dif = getDIF(GConfigs.cldToString(start_date),
+    while (start_date.isBefore(end_date)) {
+      Float dif = getDIF(start_date.toString(),
               shortD, longD, rawDataMap);
       if (dif != null) {
         v = (float) ema.average(dif);
       }
-      start_date.add(Calendar.DAY_OF_MONTH, 1);
+     start_date= start_date.plusDays(1);
     }
     return v;
   }
@@ -147,8 +146,8 @@ public class PriceMovingAverage {
           ConcurrentHashMap<String, Object[]> rawDataMap,
           HashMap<String, Float> ema) throws ParseException {
 
-    Calendar start_date = StatCalculator.getFirstValidDate(rawDataMap);
-    Object[] raw_data = rawDataMap.get(GConfigs.cldToString(start_date));
+    LocalDate start_date = StatCalculator.getFirstValidDate(rawDataMap);
+    Object[] raw_data = rawDataMap.get(start_date.toString());
     if (raw_data == null) {
       System.err.println("Cannot find first valid date");
       return;
@@ -157,15 +156,15 @@ public class PriceMovingAverage {
     EMovingAverage ma = new EMovingAverage(2.0 / (1.0 + emaDuration));
     int buffer = 15;
     while (buffer > 0) {
-      String datestr = GConfigs.cldToString(start_date);
+      String datestr = start_date.toString();
       raw_data = rawDataMap.get(datestr);
       if (raw_data == null) {
         buffer--;
       } else {
         buffer = 15;
-        ema.put(datestr, (float) ma.average((float) raw_data[RAW_DATA_INDEX.CLOSE.ordinal()]));
+        ema.put(datestr, (float) ma.average((float) raw_data[YAHOO_DATA_INDEX.CLOSE.ordinal()]));
       }
-      start_date.add(Calendar.DAY_OF_MONTH, 1);
+      start_date=start_date.plusDays(1);
     }
   }
 
@@ -181,8 +180,8 @@ public class PriceMovingAverage {
 
     StandardDeviation deviation = new StandardDeviation();
 
-    Calendar start_date = StatCalculator.getFirstValidDate(rawDataMap);
-    Object[] raw_data = rawDataMap.get(GConfigs.cldToString(start_date));
+    LocalDate start_date = StatCalculator.getFirstValidDate(rawDataMap);
+    Object[] raw_data = rawDataMap.get(start_date.toString());
     if (raw_data == null) {
       System.err.println("Cannot find first valid date");
       return;
@@ -192,13 +191,13 @@ public class PriceMovingAverage {
     //Buffer is used to skip dates with no data
     int buffer = 15;
     while (buffer > 0) {
-      String datestr = GConfigs.cldToString(start_date);
+      String datestr = start_date.toString();
       raw_data = rawDataMap.get(datestr);
       if (raw_data == null) {
         buffer--;
       } else {
         buffer = 15;
-        ma.newNum((float) raw_data[RAW_DATA_INDEX.CLOSE.ordinal()]);
+        ma.newNum((float) raw_data[YAHOO_DATA_INDEX.CLOSE.ordinal()]);
         Object[] queue_data = ma.getWindow().toArray();
         double[] fqueue = new double[queue_data.length];
         for (int i = 0; i < queue_data.length; i++) {
@@ -207,7 +206,7 @@ public class PriceMovingAverage {
         std.put(datestr, (float) deviation.evaluate(fqueue));
         sma.put(datestr, (float) ma.getAvg());
       }
-      start_date.add(Calendar.DAY_OF_MONTH, 1);
+     start_date= start_date.plusDays(1);
     }
   }
 

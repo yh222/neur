@@ -1,27 +1,26 @@
 package calculator;
 
-import static calculator.StatCalculator.getUsableDate;
-import core.GConfigs;
-import core.GConfigs.RAW_DATA_INDEX;
+import core.GConfigs.YAHOO_DATA_INDEX;
 import java.text.ParseException;
-import java.util.Calendar;
+import java.time.LocalDate;
 import java.util.concurrent.ConcurrentHashMap;
+import util.MyUtils;
 
 public class ADTM {
 
   public static Object getMAADTM(String date, int maDuration, int sumBackDuration,
           ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException {
     SMovingAverage ma = new SMovingAverage(maDuration);
-    Calendar start_date = getUsableDate(date, rawDataMap, maDuration, maDuration, true, true);
-    Calendar end_date = getUsableDate(date, rawDataMap, maDuration, maDuration, false, true);
+    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, maDuration, maDuration, true, true);
+    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, maDuration, maDuration, false, true);
     if (start_date == null || end_date == null) {
       return null;
     }
 
-    while (!start_date.after(end_date)) {
-      ma.newNum((double) getADTM(GConfigs.cldToString(start_date),
+    while (start_date.isBefore(end_date)) {
+      ma.newNum((double) getADTM(start_date.toString(),
               sumBackDuration, rawDataMap));
-      start_date.add(Calendar.DAY_OF_MONTH, 1);
+      start_date=start_date.plusDays(1);
     }
 
     return ma.getAvg();
@@ -46,21 +45,21 @@ public class ADTM {
 
   public static float sumBack(String date, int distance, int duration,
           ConcurrentHashMap<String, Object[]> rawDataMap, Method m) throws ParseException {
-    Calendar start_date = getUsableDate(date, rawDataMap, distance, duration, true, true);
-    Calendar end_date = getUsableDate(date, rawDataMap, distance, duration, false, true);
+    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, true, true);
+    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, false, true);
     if (start_date == null || end_date == null) {
       return 0;
     }
-    float sum = m.execute(GConfigs.getDateFormat().format(start_date.getTime()), rawDataMap);
+    float sum = m.execute(start_date.toString(), rawDataMap);
 
-    start_date.add(Calendar.DAY_OF_MONTH, 1);
-    while (!start_date.after(end_date)) {
-      Object[] row = rawDataMap.get(GConfigs.getDateFormat().format(start_date.getTime()));
+    start_date=start_date.plusDays( 1);
+    while (start_date.isBefore(end_date)) {
+      Object[] row = rawDataMap.get(start_date.toString());
       if (row != null) {
         //Use highest as high, lowest as low
-        sum += m.execute(GConfigs.getDateFormat().format(start_date.getTime()), rawDataMap);
+        sum += m.execute(start_date.toString(), rawDataMap);
       }
-      start_date.add(Calendar.DAY_OF_MONTH, 1);
+      start_date=start_date.plusDays(1);
     }
 
     return sum;
@@ -77,14 +76,14 @@ public class ADTM {
     public float execute(String date, ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException {
       float dtm;
       Object[] raw_data = rawDataMap.get(date);
-      float open = (float) raw_data[RAW_DATA_INDEX.OPEN.ordinal()];
-      float high = (float) raw_data[RAW_DATA_INDEX.HIGH.ordinal()];
-      Calendar yesterday = StatCalculator.getUsableDate(date, rawDataMap, 1, 1, true, true);
+      float open = (float) raw_data[YAHOO_DATA_INDEX.OPEN.ordinal()];
+      float high = (float) raw_data[YAHOO_DATA_INDEX.HIGH.ordinal()];
+      LocalDate yesterday = MyUtils.getUsableDate(date, rawDataMap, 1, 1, true, true);
       if (yesterday == null) {
         return 0;
       }
-      raw_data = rawDataMap.get(GConfigs.getDateFormat().format(yesterday.getTime()));
-      float yopen = (float) raw_data[RAW_DATA_INDEX.OPEN.ordinal()];
+      raw_data = rawDataMap.get(yesterday.toString());
+      float yopen = (float) raw_data[YAHOO_DATA_INDEX.OPEN.ordinal()];
       if (open <= yopen) {
         dtm = 0;
       } else {
@@ -100,14 +99,14 @@ public class ADTM {
     public float execute(String date, ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException {
       float dbm;
       Object[] raw_data = rawDataMap.get(date);
-      float open = (float) raw_data[RAW_DATA_INDEX.OPEN.ordinal()];
-      float low = (float) raw_data[RAW_DATA_INDEX.LOW.ordinal()];
-      Calendar yesterday = StatCalculator.getUsableDate(date, rawDataMap, 1, 1, true, true);
+      float open = (float) raw_data[YAHOO_DATA_INDEX.OPEN.ordinal()];
+      float low = (float) raw_data[YAHOO_DATA_INDEX.LOW.ordinal()];
+      LocalDate yesterday = MyUtils.getUsableDate(date, rawDataMap, 1, 1, true, true);
       if (yesterday == null) {
         return 0;
       }
-      raw_data = rawDataMap.get(GConfigs.getDateFormat().format(yesterday.getTime()));
-      float yopen = (float) raw_data[RAW_DATA_INDEX.OPEN.ordinal()];
+      raw_data = rawDataMap.get(yesterday.toString());
+      float yopen = (float) raw_data[YAHOO_DATA_INDEX.OPEN.ordinal()];
       if (open >= yopen) {
         dbm = 0;
       } else {

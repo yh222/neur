@@ -66,8 +66,8 @@ public class STKTrainingValueMaker {
   public void generateNominalTrainingValues(String date,
           ConcurrentHashMap<String, Object[]> rawDataMap,
           HashMap<String, Object> storageRow) {
+    storageRow.put(GConfigs.NOM + "Date", date);
     addSeasonOfYear(date, storageRow);
-    storageRow.put(GConfigs.NOM + "Date", "\"" + date + "\"");
     //addDayOfWeek(date, storageRow);
     //addCandleUnitForDay(m_Code, date, rawDataMap, storageRow);
   }
@@ -141,11 +141,6 @@ public class STKTrainingValueMaker {
 //            Extreme.getExtremeRatio(
 //                    date, rawDataMap, 240, 200, false));
 
-  }
-
-  private void addDayOfWeek(String date, HashMap<String, Object> storageRow) {
-    storageRow.put(GConfigs.NOM + "DayOfWeek",
-            StatCalculator.getDayOfWeek(date));
   }
 
   private void addClusteredTrends(String date,
@@ -280,7 +275,7 @@ public class STKTrainingValueMaker {
       storageRow.put("SMA10", m_MovingAverage.getSMA(date, 10, rawDataMap));
       storageRow.put("SMA20", m_MovingAverage.getSMA(date, 20, rawDataMap));
       storageRow.put("SMA50", m_MovingAverage.getSMA(date, 50, rawDataMap));
-     // storageRow.put("SMA100", m_MovingAverage.getSMA(date, 100, rawDataMap));
+      // storageRow.put("SMA100", m_MovingAverage.getSMA(date, 100, rawDataMap));
       //storageRow.put("SMA200", m_MovingAverage.getSMA(date, 200, rawDataMap));
     } catch (ParseException ex) {
       Logger.getLogger(STKTrainingValueMaker.class.getName()).log(Level.SEVERE, null, ex);
@@ -294,7 +289,7 @@ public class STKTrainingValueMaker {
       storageRow.put("STD20", std20_20);
       storageRow.put("STDSLP20", StatCalculator.getSlope(std20_25, std20_20, 5));
       storageRow.put("STD50", m_MovingAverage.getSTD(date, 50, 50, rawDataMap));
-     // storageRow.put("STD100", m_MovingAverage.getSTD(date, 100, 100, rawDataMap));
+      // storageRow.put("STD100", m_MovingAverage.getSTD(date, 100, 100, rawDataMap));
     } catch (ParseException ex) {
       Logger.getLogger(STKTrainingValueMaker.class.getName()).log(Level.SEVERE, null, ex);
     }
@@ -356,17 +351,13 @@ public class STKTrainingValueMaker {
             date, rawDataMap, 30, 30));
 
    // storageRow.put("HistoryAvgDiff90", StatCalculator.getHistoryAvgDiff(
-     //       date, rawDataMap, 90, 90));
-
+    //       date, rawDataMap, 90, 90));
     //storageRow.put("HistoryAvgDiff90_90", StatCalculator.getHistoryAvgDiff(
     //        date, rawDataMap, 180, 90));
-
    // storageRow.put("HistoryAvgDiff180", StatCalculator.getHistoryAvgDiff(
-     //       date, rawDataMap, 180, 180));
-
+    //       date, rawDataMap, 180, 180));
    // storageRow.put("HistoryAvgDiff180_90", StatCalculator.getHistoryAvgDiff(
-   //         date, rawDataMap, 270, 180));
-
+    //         date, rawDataMap, 270, 180));
   }
 
   private void addADTM(String date, ConcurrentHashMap<String, Object[]> rawDataMap, HashMap<String, Object> storageRow) {
