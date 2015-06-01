@@ -192,11 +192,11 @@ public class Predictor {
                     + defaultFormat.format(rootRelativeSquaredError) + "," + id);
 
             float rank = infusedRanks.get(classAtt);
-            if (result <= -2 * GConfigs.getSignificanceNormal(MODEL_TYPES.STK)
-                    || result >= 2 * GConfigs.getSignificanceNormal(MODEL_TYPES.STK)) {
+            if (result <= -2 * GConfigs.getSignificanceNormal(MODEL_TYPES.STK.name())
+                    || result >= 2 * GConfigs.getSignificanceNormal(MODEL_TYPES.STK.name())) {
               rank += 1;
-            } else if (result <= -1 * GConfigs.getSignificanceNormal(MODEL_TYPES.STK)
-                    || result >= GConfigs.getSignificanceNormal(MODEL_TYPES.STK)) {
+            } else if (result <= -1 * GConfigs.getSignificanceNormal(MODEL_TYPES.STK.name())
+                    || result >= GConfigs.getSignificanceNormal(MODEL_TYPES.STK.name())) {
               rank += 1;
             }
             infusedRanks.put(classAtt, rank);

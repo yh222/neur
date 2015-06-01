@@ -66,7 +66,7 @@ public class Extreme {
   }
 
   public static float getHighLowClass(MODEL_TYPES type, float v) {
-    float sig = GConfigs.getSignificanceNormal(type);
+    float sig = GConfigs.getSignificanceNormal(type.name());
     //positive or negative
     boolean sign = v >= 0;
     int i = (int) Math.ceil(Math.abs(v) / sig) - 1;

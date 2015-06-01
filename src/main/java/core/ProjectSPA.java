@@ -20,13 +20,14 @@ public class ProjectSPA {
     ArrayList<String> seriesClassifierNames = new ArrayList();
     ArrayList<String[]> SeriesOptionsList = new ArrayList();
 
-//    classifierNames.add("weka.classifiers.trees.RandomForest");
-//    optionsList.add(new String[]{"-I", "40", "-depth", "10"});
+    classifierNames.add("weka.classifiers.trees.RandomForest");
+    optionsList.add(new String[]{"-I", "40", "-depth", "10"});
     
 //     classifierNames.add("weka.classifiers.meta.RotationForest");
 //    optionsList.add(new String[]{"-G", "3", "-H", "3","-P","50","-F"
 //            ,"weka.filters.unsupervised.attribute.PrincipalComponents -R 1.0 -A 5 -M -1","-S","1","-I","10"
 //    ,"-W","weka.classifiers.trees.J48","--","-C","0.25","-M","2"});   
+    
 //        classifierNames.add("weka.classifiers.meta.RotationForest");
 //    optionsList.add(new String[]{"-G", "3", "-H", "3","-P","50","-F"
 //            ,"weka.filters.unsupervised.attribute.RandomProjection -N 10 -R 42 -D Sparse1","-S","1","-I","10"
@@ -63,8 +64,8 @@ public class ProjectSPA {
 //    optionsList.add(new String[]{   "-M", "4.0"});
 
     
-       classifierNames.add("weka.classifiers.rules.PART");
-    optionsList.add(new String[]{   "-M", "2","-C","0.25","-Q","1"});
+//       classifierNames.add("weka.classifiers.rules.PART");
+//    optionsList.add(new String[]{   "-M", "2","-C","0.25","-Q","1"});
     
     
     

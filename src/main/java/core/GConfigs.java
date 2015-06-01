@@ -22,7 +22,7 @@ public class GConfigs {
   public static final String DEFAULT_START_DATE = "2014-01-01";
 
   // Global Value:  project path
-  public static final String DEFAULT_PATH = "D:\\Documents\\NetBeansProjects\\ProjectSPA\\";
+  public static final String DEFAULT_PATH = "D:\\Documents\\ProjectSPAData\\";
   public static final String RESOURCE_PATH = DEFAULT_PATH + "resources\\";
   public static final String MODEL_PATH = DEFAULT_PATH + "models\\";
   public static final String TEMP_PATH = DEFAULT_PATH + "temp\\";
@@ -104,9 +104,9 @@ public class GConfigs {
 
   private static ConcurrentHashMap<String, Float> NormalSigMap;
 
-  public static final float getSignificanceNormal(MODEL_TYPES type) {
+  public static final float getSignificanceNormal(String type) {
 
-    if (type.equals(MODEL_TYPES.FX)) {
+    if (type.contains(MODEL_TYPES.FX.name())) {
       return 0.004f;
     } else {
       return 0.02f;

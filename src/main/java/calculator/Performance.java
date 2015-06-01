@@ -22,7 +22,7 @@ import weka.core.Instances;
 public class Performance {
 
   // Structure: Code -> (ClassifierName-> Data)
-  private ConcurrentHashMap<String, ConcurrentHashMap<String, float[][]>> m_Performance;
+  private final ConcurrentHashMap<String, ConcurrentHashMap<String, float[][]>> m_Performance;
   private final String m_TypePath;
 
   public Performance(ArrayList<String> instruments, String modelType) {
@@ -37,7 +37,6 @@ public class Performance {
   public void saveModelAndPerformance(String code,
           String identification,
           Classifier classifier,
-          Instances trainHeader,
           float[] performance) {
 
     String dir = MODEL_PATH + m_TypePath + code + "//";
@@ -52,7 +51,6 @@ public class Performance {
     try (ObjectOutputStream objectOutputStream
             = new ObjectOutputStream(new FileOutputStream(file, false))) {
       objectOutputStream.writeObject(classifier);
-      objectOutputStream.writeObject(trainHeader.stringFreeStructure());
     } catch (Exception e) {
       Logger.getLogger(Performance.class.getName()).log(Level.SEVERE, null, e);
     }
@@ -95,7 +93,7 @@ public class Performance {
     ConcurrentHashMap<String, ConcurrentHashMap<String, float[][]>> map
             = new ConcurrentHashMap();
     for (String i : instruments) {
-      map.put(i, new ConcurrentHashMap<String, float[][]>());
+      map.put(i, new ConcurrentHashMap<>());
     }
     return map;
   }
