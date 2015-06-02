@@ -99,6 +99,7 @@ public class TrainingFileGenerator {
 
     public void writeFullTrainingFile(String code, ArrayList<LinkedHashMap<String, Object>> training_data, boolean createHeaders) {
       File training_file = new File(m_LocalPath + code + "//" + code + "_Training.csv");
+      
       try (PrintWriter writer = new PrintWriter(new BufferedWriter(
               new FileWriter(training_file, false)))) {
         String temp = "";
@@ -127,8 +128,10 @@ public class TrainingFileGenerator {
       } catch (IOException ex) {
         Logger.getLogger(TrainingFileGenerator.class.getName()).log(Level.SEVERE, "Failed to write to training file for: " + code, ex);
       }
+      
     }
 
+    // The evaluation file is used for manual evaluation, can be disabled if not in use.
     private void writeWekaEvaluationFile(String code, ArrayList<LinkedHashMap<String, Object>> training_data, boolean createHeaders) {
       weka.filters.unsupervised.attribute.Discretize disc=new weka.filters.unsupervised.attribute.Discretize();
       

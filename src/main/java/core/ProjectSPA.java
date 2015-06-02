@@ -1,6 +1,5 @@
 package core;
 
-import calculator.Performance;
 import core.GConfigs.MODEL_TYPES;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -86,8 +85,7 @@ public class ProjectSPA {
     ExecutorService executor = Executors.newFixedThreadPool(6);
 
     ArrayList<String> instruments = GConfigs.INSTRUMENT_CODES;
-    Performance perf = new Performance(instruments, MODEL_TYPES.STK.name());
-    WekaModelBenchamrker benchmarker = new WekaModelBenchamrker(perf, MODEL_TYPES.STK.name());
+    WekaModelBenchamrker benchmarker = new WekaModelBenchamrker(MODEL_TYPES.STK.name());
 
     for (String i : instruments) {
       Runnable worker = new ClassicifyThread(i,
@@ -98,7 +96,6 @@ public class ProjectSPA {
     executor.shutdown();
     while (!executor.isTerminated()) {
     }
-    perf.outputPerformanceData();
 
   }
 //

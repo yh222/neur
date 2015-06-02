@@ -2,8 +2,6 @@ package model;
 
 import core.GConfigs;
 
-import calculator.Performance;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -29,24 +27,22 @@ import weka.core.Attribute;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.core.converters.CSVLoader;
 import weka.filters.Filter;
 
 public class WekaModelBenchamrker {
 
-  private final Performance m_Performance;
   private final String m_TypePath;
   private final int m_DaysForEval = 90;
 
-  public WekaModelBenchamrker(Performance perf, String modelType) {
-    m_Performance = perf;
+  public WekaModelBenchamrker(String modelType) {
     m_TypePath = modelType + "//";
   }
 
   public void benchmarkByClasses(String code,
           ArrayList<String> classifierNames,
           ArrayList<String[]> optionsList) throws IOException {
-    Instances raw_data = loadInstancesFromCSV(code);
+    Instances raw_data = MyUtils.loadInstancesFromCSV(GConfigs.RESOURCE_PATH
+            + this.m_TypePath + code + "//" + code + "_Training.csv");
     //raw_data=weightDataByDate(raw_data);
 
     for (int i = 0; i < GConfigs.getClassCount(m_TypePath); i++) {
@@ -71,7 +67,7 @@ public class WekaModelBenchamrker {
                   ArrayList<String[]> optionsList, int classIndex) throws Exception {
     HashMap<Evaluation, float[]> modelBenchMap = new HashMap();
     String class_name = trainingData.classAttribute().name();
-    String dayptn = "(\\d)(d)+";
+    String dayptn = "(\\d+)(d)+";
     Pattern pattern_days = Pattern.compile(dayptn);
     Matcher matcher;
     matcher = pattern_days.matcher(class_name);
@@ -103,12 +99,9 @@ public class WekaModelBenchamrker {
       System.out.println("False positive:" + eval_result[1]);
       System.out.println("Random rate:" + eval_result[2]);
 
-      m_Performance.saveModelAndPerformance(code, identity,
-              classifier,  eval_result);
-      m_Performance.putClassResult(code, optionsList.get(i)[3].substring(17) + "-" + additionInfo,
-              eval_result, classIndex);
-      
-      
+      MyUtils.saveModelAndPerformance(code, identity, m_TypePath,
+              classifier, trainingData.stringFreeStructure(), eval_result);
+
       // Series forecasting
       classifier = AbstractClassifier.forName(classifierNames.get(i), optionsList.get(i).clone());
       //Skip if this classified only handles nominal value
@@ -120,32 +113,15 @@ public class WekaModelBenchamrker {
       WekaForecaster forecaster = new WekaForecaster();
       forecaster.setBaseForecaster(classifier);
       forecaster.setFieldsToForecast(class_name);
-      forecaster.buildForecaster(instances, System.out);
+      forecaster.buildForecaster(instances);
       forecaster.primeForecaster(instances);
       System.out.println(code + ", " + identity);
-      System.out.println("Mean absolete error series:" + eval_result[0]);
+      System.out.println("Mean absolete error (Series):" + eval_result[0]);
       System.out.println("False positive:" + eval_result[1]);
       System.out.println("Random rate:" + eval_result[2]);
+      MyUtils.saveModelAndPerformance(code, identity + "Series", m_TypePath,
+              forecaster, instances, eval_result);
     }
-
-//      //Create classifier and cross evaluate it
-//      Evaluation eval = new Evaluation(instances);
-//      eval.crossValidateModel(classifier, instances, 1, new Random());
-//      float[] result;
-//      if (trainingData.attribute(47).isNumeric()) {//If it is numeric
-//        result = generateResultForNumeric(eval);
-//        System.out.println(eval.rootMeanSquaredError());
-//        System.out.println(eval.rootRelativeSquaredError());
-//      } else {
-//        result = generateResultForNominal(eval);
-//        System.out.println(eval.toMatrixString());
-//      }
-//
-//      //however, the model for the same classifier will be different
-//      m_Performance.saveModelAndPerformance(code, identify,
-//              classifier, trainingData.stringFreeStructure(), result);
-//      m_Performance.putClassResult(code, optionsList.get(i)[3].substring(17) + "-" + additionInfo,
-//              result, classIndex);
     return modelBenchMap;
   }
 
@@ -205,16 +181,6 @@ public class WekaModelBenchamrker {
     return selection.reduceDimensionality(originalData);
   }
 
-  private Instances loadInstancesFromCSV(String code) throws IOException {
-    String trainFileName = GConfigs.RESOURCE_PATH + m_TypePath + code + "//" + code + "_Training.csv";
-    CSVLoader loader = new CSVLoader();
-    loader.setDateAttributes("first");
-    loader.setDateFormat("yyyy-mm-dd");
-    loader.setSource(new File(trainFileName));
-    Instances data = loader.getDataSet();
-    return data;
-  }
-
   private Instances weightDataByDate(Instances data) {
     LocalDate tempdate;
     Instance ins;
@@ -259,6 +225,8 @@ public class WekaModelBenchamrker {
     Instances local_data = new Instances(originalData);
     int size = originalData.size() - 1;
     float false_positive = 0;
+    float positive_count = 0;
+    float random_false = 0;
     float random_count = 0;
     float[] errors = new float[m_DaysForEval];
     double threshold = determineEvaluationThreshold(originalData);
@@ -278,29 +246,48 @@ public class WekaModelBenchamrker {
 
       if (class_att.isNumeric()) {
         // If |av|<|t| && |fr|>|t|
-        if (Math.abs(av) <= Math.abs(threshold) && Math.abs(fr) > Math.abs(threshold)) {
-          false_positive++;
+        if (Math.abs(fr) > Math.abs(threshold)) {
+          positive_count++;
+          if (Math.abs(av) <= Math.abs(threshold)) {
+            false_positive++;
+          }
         }
         // Count for random rate, 50% change for random to be greater than threshold
-        if (Math.abs(av) <= Math.abs(threshold) && new Random().nextBoolean()) {
+        if (new Random().nextBoolean()) {
           random_count++;
+          if (Math.abs(av) <= Math.abs(threshold)) {
+            random_false++;
+          }
         }
+
       } else if (threshold > half_att_amount) { //predicting negative
-        if (av >= threshold && fr < threshold) {
-          false_positive++;
+        if (fr < threshold) {
+          positive_count++;
+          if (av >= threshold && fr < threshold) {
+            false_positive++;
+          }
         }
         // Count for random rate, 50% change for fr to be greater than threshold
-        if (av >= threshold && new Random().nextBoolean()) {
+        if (new Random().nextBoolean()) {
           random_count++;
+          if (av >= threshold) {
+            random_false++;
+          }
         }
 
       } else if (threshold < half_att_amount) { //predicting positive
-        if (av <= threshold && fr > threshold) {
-          false_positive++;
+        if (fr > threshold) {
+          positive_count++;
+          if (av <= threshold) {
+            false_positive++;
+          }
         }
         // Count for random rate, 50% change for fr to be greater than threshold
-        if (av <= threshold && new Random().nextBoolean()) {
+        if (new Random().nextBoolean()) {
           random_count++;
+          if (av <= threshold) {
+            random_false++;
+          }
         }
       }
 
@@ -308,8 +295,8 @@ public class WekaModelBenchamrker {
       //System.out.println("fr=" + fr + ", av=" + av);
     }
 
-    false_positive = false_positive / m_DaysForEval;
-    random_count = random_count / m_DaysForEval;
+    false_positive = false_positive / positive_count;
+    random_false = random_false / random_count;
     float sum = 0;
     for (float i : errors) {
       sum += Math.abs(i);
@@ -317,7 +304,7 @@ public class WekaModelBenchamrker {
     float[] eval = new float[5];
     eval[0] = sum / errors.length;
     eval[1] = false_positive;
-    eval[2] = random_count;
+    eval[2] = random_false;
 
     return eval;
   }
@@ -326,20 +313,13 @@ public class WekaModelBenchamrker {
           String class_name, Instances originalData, int daysToAdvance) throws Exception {
     int size = originalData.size() - 1;
     float false_positive = 0;
+    float positive_count = 0;
     float[] errors = new float[m_DaysForEval];
     float random_count = 0;
+    float random_false = 0;
 
     Instances local_data = new Instances(originalData);
     double threshold = determineEvaluationThreshold(originalData);
-
-    PrintStream ops = new PrintStream(new OutputStream() {
-      @Override
-      public void write(int b) throws IOException {
-      }
-
-      public void println(String s) {
-      }
-    });
 
     for (int i = 0; i < m_DaysForEval; i++) {
       WekaForecaster fc = new WekaForecaster();
@@ -351,19 +331,25 @@ public class WekaModelBenchamrker {
 //      fc.getTSLagMaker().setLagRange("");
 //      fc.getTSLagMaker().setPrimaryPeriodicFieldName("");
       local_data.remove(size - i);
-      fc.buildForecaster(local_data, ops);
+      fc.buildForecaster(local_data);
       fc.primeForecaster(local_data);
 
       if (size + daysToAdvance - i <= size) {
-        double fr = (fc.forecast(daysToAdvance, ops).get(daysToAdvance - 1).get(0).predicted());
+        double fr = (fc.forecast(daysToAdvance).get(daysToAdvance - 1).get(0).predicted());
         double av = originalData.get(size + daysToAdvance - i).classValue();
         // If |av|<|t| && |fr|>|t|
-        if (Math.abs(av) <= Math.abs(threshold) && Math.abs(fr) > Math.abs(threshold)) {
-          false_positive++;
+        if (Math.abs(fr) > Math.abs(threshold)) {
+          positive_count++;
+          if (Math.abs(av) <= Math.abs(threshold)) {
+            false_positive++;
+          }
         }
         // Count for random rate, 50% change for random to be greater than threshold
-        if (Math.abs(av) <= Math.abs(threshold) && new Random().nextBoolean()) {
+        if (new Random().nextBoolean()) {
           random_count++;
+          if (Math.abs(av) <= Math.abs(threshold)) {
+            random_false++;
+          }
         }
 
         //System.out.println("fr=" + fr + ", av=" + av);
@@ -376,12 +362,12 @@ public class WekaModelBenchamrker {
       sum += Math.abs(i);
     }
     float[] eval = new float[5];
-    false_positive = false_positive / m_DaysForEval;
-    random_count = random_count / m_DaysForEval;
+    false_positive = false_positive / positive_count;
+    random_false = random_false / random_count;
 
     eval[0] = sum / errors.length;
     eval[1] = false_positive;
-    eval[2] = random_count;
+    eval[2] = random_false;
 
     return eval;
   }

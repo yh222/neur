@@ -29,7 +29,9 @@ public class STKClassValueMaker {
     storageRow.put(GConfigs.CLS + "Highest5d",
             Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
                     rawDataMap, 0, 5, true));
-
+    storageRow.put(GConfigs.CLS + "Highest10d",
+            Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
+                    rawDataMap, 0, 10, true));
 //    for (int i = 0; i < WEEK_MULTIPIER_CLASS.length; i++) {
 //      days = WEEK_MULTIPIER_CLASS[i] * DaysInWeek;
 //      storageRow.put(GConfigs.NCLS + "Highest" + String.format("%02d", days) + "d",

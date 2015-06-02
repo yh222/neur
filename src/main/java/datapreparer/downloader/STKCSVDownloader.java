@@ -71,36 +71,14 @@ public class STKCSVDownloader {
   public static boolean isUpToDate(String code, String file_path) {
     File file = new File(file_path);
     MyUtils.findOrCreateFolder(file.getParentFile().getAbsolutePath());
-    if (file.isFile()) {
-      try (final BufferedReader reader = new BufferedReader(
-              new FileReader(file))) {
-        String line;
-        String last_line = "";
-        // keep reading until the last line
-        while ((line = reader.readLine()) != null) {
-          last_line = line;
-        }
 
-        if (last_line.length() > 10) {
-          LocalDate start_date = LocalDate.parse(last_line.substring(0, 10), DateTimeFormatter.ISO_LOCAL_DATE);
-         start_date= start_date.plusDays(1);
-          if (start_date.toString().equals(LocalDate.now().toString())) {
-            //if the date is today, skip G
-            System.out.println(code + " is up to date.");
-            return true;
-          }
-        }
-      } catch (FileNotFoundException ex) {
-        Logger.getLogger(STKCSVDownloader.class.getName()).log(Level.SEVERE, " failed to create data file for: " + code, ex);
-      } catch (Exception e) {
-        Logger.getLogger(STKCSVDownloader.class.getName()).log(Level.SEVERE, " error when load data file:" + code, e);
-      }
-    } else {
-      // Create a new datafile
-      try {
-        file.createNewFile();
-      } catch (IOException ex) {
-        Logger.getLogger(STKCSVDownloader.class.getName()).log(Level.SEVERE, " failed to create data file for: " + code, ex);
+    LocalDate start_date = MyUtils.getLastDateFromFile(file);
+    if (start_date != null) {
+      start_date = start_date.plusDays(1);
+      if (start_date.toString().equals(LocalDate.now().toString())) {
+        //if the date is today, skip G
+        System.out.println(code + " is up to date.");
+        return true;
       }
     }
     return false;
