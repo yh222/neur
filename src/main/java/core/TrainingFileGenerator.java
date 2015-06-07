@@ -22,7 +22,7 @@ import util.MyUtils;
 /**
  * Generate training data by raw .csv data downloaded by CSVDownloader
  *
- * Each data set stored as an ArrayList of float arrays
+ * Each data set stored as an ArrayList of double arrays
  */
 public class TrainingFileGenerator {
 

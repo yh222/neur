@@ -26,25 +26,33 @@ public class STKClassValueMaker {
     int days;
 
     //Debug
-    storageRow.put(GConfigs.CLS + "Highest5d",
-            Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
-                    rawDataMap, 0, 5, true));
-    storageRow.put(GConfigs.CLS + "Highest10d",
-            Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
-                    rawDataMap, 0, 10, true));
-//    for (int i = 0; i < WEEK_MULTIPIER_CLASS.length; i++) {
-//      days = WEEK_MULTIPIER_CLASS[i] * DaysInWeek;
-//      storageRow.put(GConfigs.NCLS + "Highest" + String.format("%02d", days) + "d",
-//              Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
-//                      rawDataMap, 0, days, true));
-//    }
-//
-//    for (int i = 0; i < WEEK_MULTIPIER_CLASS.length; i++) {
-//      days = WEEK_MULTIPIER_CLASS[i] * DaysInWeek;
-//      storageRow.put(GConfigs.NCLS + "Lowest" + String.format("%02d", days) + "d",
-//              Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
-//                      rawDataMap, 0, days, false));
-//    }
+//    storageRow.put(GConfigs.CLS + "Highest5d",
+//            Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
+//                    rawDataMap, 0, 5, true));
+//    storageRow.put(GConfigs.CLS + "Highest10d",
+//            Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
+//                    rawDataMap, 0, 10, true));
+//    
+//        storageRow.put(GConfigs.CLS + "Lowest5d",
+//            Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
+//                    rawDataMap, 0, 5, false));
+//    storageRow.put(GConfigs.CLS + "Lowest15d",
+//            Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
+//                    rawDataMap, 0, 15, false));
+    
+    for (int i = 0; i < WEEK_MULTIPIER_CLASS.length; i++) {
+      days = WEEK_MULTIPIER_CLASS[i] * DaysInWeek;
+      storageRow.put(GConfigs.CLS + "Highest" + String.format("%02d", days) + "d",
+              Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
+                      rawDataMap, 0, days, true));
+    }
+
+    for (int i = 0; i < WEEK_MULTIPIER_CLASS.length; i++) {
+      days = WEEK_MULTIPIER_CLASS[i] * DaysInWeek;
+      storageRow.put(GConfigs.CLS + "Lowest" + String.format("%02d", days) + "d",
+              Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
+                      rawDataMap, 0, days, false));
+    }
   }
 
   private static void addClusteredTrends(String code, String date,
@@ -71,10 +79,9 @@ public class STKClassValueMaker {
     int days;
 
     //Debug
-    storageRow.put(GConfigs.CLS + "Highest5dV",
-            Extreme.getExtremeRatio(date,
-                    rawDataMap, 0, 5, true));
-
+//    storageRow.put(GConfigs.CLS + "Highest5dV",
+//            Extreme.getExtremeRatio(date,
+//                    rawDataMap, 0, 5, true));
 //    storageRow.put(GConfigs.CLS + "Highest10d_series",
 //            Extreme.getExtreme(date,
 //                    rawDataMap, 0, 10, true));    

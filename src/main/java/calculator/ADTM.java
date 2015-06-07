@@ -29,8 +29,8 @@ public class ADTM {
   public static Object getADTM(String date, int sumBackDuration,
           ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException {
 
-    float stm = sumBack(date, sumBackDuration, sumBackDuration, rawDataMap, new DTM());
-    float sbm = sumBack(date, sumBackDuration, sumBackDuration, rawDataMap, new DBM());
+    double stm = sumBack(date, sumBackDuration, sumBackDuration, rawDataMap, new DTM());
+    double sbm = sumBack(date, sumBackDuration, sumBackDuration, rawDataMap, new DBM());
 
     double adtm;
     if (stm > sbm) {
@@ -43,14 +43,14 @@ public class ADTM {
     return adtm;
   }
 
-  public static float sumBack(String date, int distance, int duration,
+  public static double sumBack(String date, int distance, int duration,
           ConcurrentHashMap<String, Object[]> rawDataMap, Method m) throws ParseException {
     LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, true, true);
     LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, false, true);
     if (start_date == null || end_date == null) {
       return 0;
     }
-    float sum = m.execute(start_date.toString(), rawDataMap);
+    double sum = m.execute(start_date.toString(), rawDataMap);
 
     start_date=start_date.plusDays( 1);
     while (start_date.isBefore(end_date)) {
@@ -67,23 +67,23 @@ public class ADTM {
 
   public interface Method {
 
-    public float execute(String date, ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException;
+    public double execute(String date, ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException;
   }
 
   public static class DTM implements Method {
 
     @Override
-    public float execute(String date, ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException {
-      float dtm;
+    public double execute(String date, ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException {
+      double dtm;
       Object[] raw_data = rawDataMap.get(date);
-      float open = (float) raw_data[YAHOO_DATA_INDEX.OPEN.ordinal()];
-      float high = (float) raw_data[YAHOO_DATA_INDEX.HIGH.ordinal()];
+      double open = (double) raw_data[YAHOO_DATA_INDEX.OPEN.ordinal()];
+      double high = (double) raw_data[YAHOO_DATA_INDEX.HIGH.ordinal()];
       LocalDate yesterday = MyUtils.getUsableDate(date, rawDataMap, 1, 1, true, true);
       if (yesterday == null) {
         return 0;
       }
       raw_data = rawDataMap.get(yesterday.toString());
-      float yopen = (float) raw_data[YAHOO_DATA_INDEX.OPEN.ordinal()];
+      double yopen = (double) raw_data[YAHOO_DATA_INDEX.OPEN.ordinal()];
       if (open <= yopen) {
         dtm = 0;
       } else {
@@ -96,17 +96,17 @@ public class ADTM {
   public static class DBM implements Method {
 
     @Override
-    public float execute(String date, ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException {
-      float dbm;
+    public double execute(String date, ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException {
+      double dbm;
       Object[] raw_data = rawDataMap.get(date);
-      float open = (float) raw_data[YAHOO_DATA_INDEX.OPEN.ordinal()];
-      float low = (float) raw_data[YAHOO_DATA_INDEX.LOW.ordinal()];
+      double open = (double) raw_data[YAHOO_DATA_INDEX.OPEN.ordinal()];
+      double low = (double) raw_data[YAHOO_DATA_INDEX.LOW.ordinal()];
       LocalDate yesterday = MyUtils.getUsableDate(date, rawDataMap, 1, 1, true, true);
       if (yesterday == null) {
         return 0;
       }
       raw_data = rawDataMap.get(yesterday.toString());
-      float yopen = (float) raw_data[YAHOO_DATA_INDEX.OPEN.ordinal()];
+      double yopen = (double) raw_data[YAHOO_DATA_INDEX.OPEN.ordinal()];
       if (open >= yopen) {
         dbm = 0;
       } else {

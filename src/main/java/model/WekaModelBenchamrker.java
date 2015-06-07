@@ -3,9 +3,6 @@ package model;
 import core.GConfigs;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -13,8 +10,6 @@ import java.util.HashMap;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import util.MyUtils;
 import weka.attributeSelection.AttributeSelection;
 import weka.attributeSelection.Ranker;
@@ -41,6 +36,8 @@ public class WekaModelBenchamrker {
   public void benchmarkByClasses(String code,
           ArrayList<String> classifierNames,
           ArrayList<String[]> optionsList) throws IOException {
+    MyUtils.deleteModelFolder(m_TypePath);
+
     Instances raw_data = MyUtils.loadInstancesFromCSV(GConfigs.RESOURCE_PATH
             + this.m_TypePath + code + "//" + code + "_Training.csv");
     //raw_data=weightDataByDate(raw_data);
@@ -61,30 +58,26 @@ public class WekaModelBenchamrker {
   }
 
   //Class index is the relative index of class value, cannot be used directly in datasource
-  public HashMap<Evaluation, float[]>
+  public HashMap<Evaluation, double[]>
           benchMarkModels(String additionInfo, Instances trainingData,
                   String code, ArrayList<String> classifierNames,
                   ArrayList<String[]> optionsList, int classIndex) throws Exception {
-    HashMap<Evaluation, float[]> modelBenchMap = new HashMap();
+    HashMap<Evaluation, double[]> modelBenchMap = new HashMap();
     String class_name = trainingData.classAttribute().name();
-    String dayptn = "(\\d+)(d)+";
-    Pattern pattern_days = Pattern.compile(dayptn);
-    Matcher matcher;
-    matcher = pattern_days.matcher(class_name);
-    matcher.find();
     //Find the days range in the class attribute
-    int days_to_advance = Integer.parseInt(matcher.group(1));
+    int days_to_advance = MyUtils.getDaysToAdvance(class_name);
 
     //For each classifier
     for (int i = 0; i < classifierNames.size(); i++) {
-      Instances instances = removeMissingClass(new Instances(trainingData));
-
+      Instances instances = new Instances(trainingData);
+      instances.deleteWithMissingClass();
+      
       // Create classifier by name and options
       Classifier classifier = AbstractClassifier.forName(classifierNames.get(i), optionsList.get(i).clone());
       String identity = classifierNames.get(i).split("\\.")[3]
               + "-" + class_name + "-" + additionInfo;
 
-      float[] eval_result;
+      double[] eval_result;
 
       //If the class attribute is numeric but the classifier is unable to handle numeric class
       // discretize the class attribute
@@ -92,15 +85,17 @@ public class WekaModelBenchamrker {
         instances = discretizeInstances(instances);
       }
 
-      eval_result = EvalClassifier(classifier, new Instances(instances), days_to_advance);
+      eval_result = evalClassifier(classifier, new Instances(instances), days_to_advance);
       classifier.buildClassifier(instances);
       System.out.println(code + ", " + identity);
       System.out.println("Mean absolete error:" + eval_result[0]);
       System.out.println("False positive:" + eval_result[1]);
       System.out.println("Random rate:" + eval_result[2]);
 
-      MyUtils.saveModelAndPerformance(code, identity, m_TypePath,
-              classifier, trainingData.stringFreeStructure(), eval_result);
+      if (eval_result[1] < 0.5) {
+        MyUtils.saveModelAndPerformance(code, identity, m_TypePath,
+                classifier, instances.stringFreeStructure(), eval_result);
+      }
 
       // Series forecasting
       classifier = AbstractClassifier.forName(classifierNames.get(i), optionsList.get(i).clone());
@@ -119,38 +114,12 @@ public class WekaModelBenchamrker {
       System.out.println("Mean absolete error (Series):" + eval_result[0]);
       System.out.println("False positive:" + eval_result[1]);
       System.out.println("Random rate:" + eval_result[2]);
-      MyUtils.saveModelAndPerformance(code, identity + "Series", m_TypePath,
-              forecaster, instances, eval_result);
+      if (eval_result[1] < 0.5) {
+        MyUtils.saveModelAndPerformance(code, identity + "Series", m_TypePath,
+                forecaster, instances, eval_result);
+      }
     }
     return modelBenchMap;
-  }
-
-  private float[] generateResultForNumeric(Evaluation eval) {
-    float[] acc = new float[7];
-    acc[0] = -1;
-    acc[1] = (float) eval.rootMeanSquaredError();
-
-    try {
-      acc[2] = (float) eval.relativeAbsoluteError();
-
-    } catch (Exception ex) {
-      Logger.getLogger(WekaModelBenchamrker.class
-              .getName()).log(Level.SEVERE, null, ex);
-    }
-
-    return acc;
-  }
-
-  private float[] generateResultForNominal(Evaluation eval) {
-    //String r = "";
-    NumberFormat defaultFormat = NumberFormat.getPercentInstance();
-    defaultFormat.setMinimumFractionDigits(2);
-
-    double[][] cost = eval.confusionMatrix();
-    eval.weightedFalseNegativeRate();
-    float[] acc = new float[7];
-
-    return acc;
   }
 
   // Only one class attribute to be predicted at once, so the other class attributes will be removed        
@@ -206,32 +175,24 @@ public class WekaModelBenchamrker {
     disc.setInputFormat(instances);
     return Filter.useFilter(instances, disc);
   }
-
-  private Instances removeMissingClass(Instances instances) throws Exception {
-    weka.filters.unsupervised.instance.RemoveWithValues filter = new weka.filters.unsupervised.instance.RemoveWithValues();
-    filter.setAttributeIndex("last");
-    filter.setNominalIndices("");
-    filter.setMatchMissingValues(true);
-    filter.setInputFormat(instances);
-    return Filter.useFilter(instances, filter);
-  }
-
+  
   /**
    * @param originalData missing class values were removed, deep copy of
    * original data
    */
-  private float[] EvalClassifier(Classifier classifier,
+  private double[] evalClassifier(Classifier classifier,
           Instances originalData, int daysToAdvance) throws Exception {
     Instances local_data = new Instances(originalData);
     int size = originalData.size() - 1;
-    float false_positive = 0;
-    float positive_count = 0;
-    float random_false = 0;
-    float random_count = 0;
-    float[] errors = new float[m_DaysForEval];
-    double threshold = determineEvaluationThreshold(originalData);
+    double false_positive = 0;
+    double positive_count = 0;
+    double random_false = 0;
+    double random_count = 0;
+    double[] errors = new double[m_DaysForEval];
+    double threshold = determineEvaluationThreshold(originalData, daysToAdvance);
     Attribute class_att = originalData.classAttribute();
     double half_att_amount = class_att.numValues() / 2;
+    double sig = GConfigs.getSignificanceNormal(m_TypePath);
 
     for (int i = 0; i < daysToAdvance; i++) {
       local_data.remove(size - i);
@@ -241,8 +202,8 @@ public class WekaModelBenchamrker {
       Classifier tclassifier = AbstractClassifier.makeCopy(classifier);
       local_data.remove(size - i);
       tclassifier.buildClassifier(local_data);
-      double fr = tclassifier.classifyInstance(originalData.get(size + daysToAdvance - i));
-      double av = originalData.get(size + daysToAdvance - i).classValue();
+      double fr = (double) tclassifier.classifyInstance(originalData.get(size + daysToAdvance - i));
+      double av = (double) originalData.get(size + daysToAdvance - i).classValue();
 
       if (class_att.isNumeric()) {
         // If |av|<|t| && |fr|>|t|
@@ -263,7 +224,7 @@ public class WekaModelBenchamrker {
       } else if (threshold > half_att_amount) { //predicting negative
         if (fr < threshold) {
           positive_count++;
-          if (av >= threshold && fr < threshold) {
+          if (av >= threshold) {
             false_positive++;
           }
         }
@@ -274,7 +235,6 @@ public class WekaModelBenchamrker {
             random_false++;
           }
         }
-
       } else if (threshold < half_att_amount) { //predicting positive
         if (fr > threshold) {
           positive_count++;
@@ -291,17 +251,21 @@ public class WekaModelBenchamrker {
         }
       }
 
-      errors[i] = (float) (av - fr);
+      errors[i] = Math.abs(av) - Math.abs(fr);
       //System.out.println("fr=" + fr + ", av=" + av);
     }
+    if (positive_count >= 10) {
+      false_positive = false_positive / positive_count;
+    } else {
+      false_positive = 0;
+    }
 
-    false_positive = false_positive / positive_count;
     random_false = random_false / random_count;
-    float sum = 0;
-    for (float i : errors) {
+    double sum = 0;
+    for (double i : errors) {
       sum += Math.abs(i);
     }
-    float[] eval = new float[5];
+    double[] eval = new double[5];
     eval[0] = sum / errors.length;
     eval[1] = false_positive;
     eval[2] = random_false;
@@ -309,17 +273,17 @@ public class WekaModelBenchamrker {
     return eval;
   }
 
-  private float[] evaluateForecaster(Classifier classifier,
+  private double[] evaluateForecaster(Classifier classifier,
           String class_name, Instances originalData, int daysToAdvance) throws Exception {
     int size = originalData.size() - 1;
-    float false_positive = 0;
-    float positive_count = 0;
-    float[] errors = new float[m_DaysForEval];
-    float random_count = 0;
-    float random_false = 0;
+    double false_positive = 0;
+    double positive_count = 0;
+    double[] errors = new double[m_DaysForEval];
+    double random_count = 0;
+    double random_false = 0;
 
     Instances local_data = new Instances(originalData);
-    double threshold = determineEvaluationThreshold(originalData);
+    double threshold = determineEvaluationThreshold(originalData, daysToAdvance);
 
     for (int i = 0; i < m_DaysForEval; i++) {
       WekaForecaster fc = new WekaForecaster();
@@ -335,8 +299,8 @@ public class WekaModelBenchamrker {
       fc.primeForecaster(local_data);
 
       if (size + daysToAdvance - i <= size) {
-        double fr = (fc.forecast(daysToAdvance).get(daysToAdvance - 1).get(0).predicted());
-        double av = originalData.get(size + daysToAdvance - i).classValue();
+        double fr = (double) (fc.forecast(daysToAdvance).get(daysToAdvance - 1).get(0).predicted());
+        double av = (double) originalData.get(size + daysToAdvance - i).classValue();
         // If |av|<|t| && |fr|>|t|
         if (Math.abs(fr) > Math.abs(threshold)) {
           positive_count++;
@@ -353,16 +317,22 @@ public class WekaModelBenchamrker {
         }
 
         //System.out.println("fr=" + fr + ", av=" + av);
-        errors[i] = (float) (fr - av);
+        errors[i] = Math.abs(av) - Math.abs(fr);
       }
     }
 
-    float sum = 0;
-    for (float i : errors) {
+    double sum = 0;
+    for (double i : errors) {
       sum += Math.abs(i);
     }
-    float[] eval = new float[5];
-    false_positive = false_positive / positive_count;
+    double[] eval = new double[5];
+
+    if (positive_count >= 10) {
+      false_positive = false_positive / positive_count;
+    } else {
+      false_positive = 0;
+    }
+
     random_false = random_false / random_count;
 
     eval[0] = sum / errors.length;
@@ -372,8 +342,14 @@ public class WekaModelBenchamrker {
     return eval;
   }
 
-  private double determineEvaluationThreshold(Instances originalData) {
+  private double determineEvaluationThreshold(Instances originalData, int daysAdv) {
     double sig = GConfigs.getSignificanceNormal(m_TypePath);
+    double half_att_amount = originalData.classAttribute().numValues() / 2;
+    int multi = 1;
+    if (daysAdv >= 20) {
+      multi = 2;
+    }
+
     //Check if the class att nominal or numeric, if nominal:
     Attribute class_att = originalData.classAttribute();
     if (class_att.isNominal()) {
@@ -387,13 +363,16 @@ public class WekaModelBenchamrker {
         tmpstr = enm.nextElement().toString();
         if (tmpstr.contains("-inf-" + half) || tmpstr.contains(neghalf + "-inf")
                 || tmpstr.contains(neghalf + "-" + half)) {
-          return class_att.indexOfValue(tmpstr);
+          if (class_att.indexOfValue(tmpstr) < half_att_amount) {
+            return class_att.indexOfValue(tmpstr) + multi - 1;
+          } else {
+            return class_att.indexOfValue(tmpstr) - multi + 1;
+          }
         }
       }
     }
     //if numeric, 
-    return sig;
-
+    return sig * multi;
   }
 
 }

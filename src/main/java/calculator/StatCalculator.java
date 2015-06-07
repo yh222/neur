@@ -26,19 +26,19 @@ public class StatCalculator {
       return null; //remain 0
     }
     int count = 0;
-    float sum_volume = 0;
+    double sum_volume = 0;
     //Calculate volume sum
     while (start_date.isBefore(end_date)) {
       if (rawDataMap.get(start_date.toString()) != null) {
         count++;
-        sum_volume += (float) rawDataMap.get(start_date.toString())[YAHOO_DATA_INDEX.VOLUME.ordinal()];
+        sum_volume += (double) rawDataMap.get(start_date.toString())[YAHOO_DATA_INDEX.VOLUME.ordinal()];
       }
       start_date = start_date.plusDays(1);
     }
     if (rawDataMap.get(start_date.toString()) == null) {
       return null;
     }
-    float current_volume = (float) rawDataMap.get(start_date.toString())[YAHOO_DATA_INDEX.VOLUME.ordinal()];
+    double current_volume = (double) rawDataMap.get(start_date.toString())[YAHOO_DATA_INDEX.VOLUME.ordinal()];
     return current_volume / (sum_volume / count);
   }
 
@@ -51,8 +51,8 @@ public class StatCalculator {
       return null;
     }
 
-    float trend_start = (float) rawDataMap.get(start_date.toString())[YAHOO_DATA_INDEX.OPEN.ordinal()];
-    float trend_end = (float) rawDataMap.get(end_date.toString())[YAHOO_DATA_INDEX.CLOSE.ordinal()];
+    double trend_start = (double) rawDataMap.get(start_date.toString())[YAHOO_DATA_INDEX.OPEN.ordinal()];
+    double trend_end = (double) rawDataMap.get(end_date.toString())[YAHOO_DATA_INDEX.CLOSE.ordinal()];
     return (trend_end - trend_start) / trend_start;
   }
 
@@ -62,17 +62,17 @@ public class StatCalculator {
     if (start_date == null || end_date == null) {
       return null;
     }
-    float start_price= (float) rawDataMap.get(start_date.toString())[YAHOO_DATA_INDEX.CLOSE.ordinal()];
+    double start_price= (double) rawDataMap.get(start_date.toString())[YAHOO_DATA_INDEX.CLOSE.ordinal()];
 
-    float max = Float.NEGATIVE_INFINITY;
-    float min = Float.POSITIVE_INFINITY;
+    double max = Double.NEGATIVE_INFINITY;
+    double min = Double.POSITIVE_INFINITY;
     //Set end date to monday of the week
     int dayofWeek = end_date.getDayOfWeek().getValue();
     end_date = end_date.plusDays(-1 * (dayofWeek - DayOfWeek.MONDAY.getValue()));
     for (int i = 0; i < 5; i++) {
       Object[] row = rawDataMap.get(end_date.toString());
       if (row != null) {
-        float temp = (float) row[YAHOO_DATA_INDEX.CLOSE.ordinal()];
+        double temp = (double) row[YAHOO_DATA_INDEX.CLOSE.ordinal()];
         if (max < temp) {
           max = temp;
         }
@@ -111,7 +111,7 @@ public class StatCalculator {
     if (rt == null) {
       return null;
     }
-    return Extreme.getHighLowClass(type, (float) rt);
+    return Extreme.getHighLowClass(type, (double) rt);
   }
 
   public static Object getNominalCluTrend(MODEL_TYPES type, String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration, boolean getHighest) {
@@ -119,18 +119,18 @@ public class StatCalculator {
     if (ext == null) {
       return null;
     }
-    return Extreme.getHighLowClass(type, (float) ext);
+    return Extreme.getHighLowClass(type, (double) ext);
   }
 
   public static Object getSlope(Object p1, Object p2, int distance) {
     if (p1 == null || p2 == null) {
       return null;
     }
-    return ((float) p2 - (float) p1) / distance;
+    return ((double) p2 - (double) p1) / distance;
   }
 
-  public static float getDividentAmt(String date, ArrayList<String[]> dividendData) {
-    float r = 0.0f;
+  public static double getDividentAmt(String date, ArrayList<String[]> dividendData) {
+    double r = 0.0;
     if (dividendData != null) {
       LocalDate inputDate = parseToISO(date);
       LocalDate tempDate;
@@ -140,7 +140,7 @@ public class StatCalculator {
         diff = tempDate.compareTo(inputDate);
         if (diff > 0 && diff < min && diff < 120) {
           min = diff;
-          r = Float.parseFloat(array[1]);
+          r = Double.parseDouble(array[1]);
         }
       }
     }
@@ -181,9 +181,9 @@ public class StatCalculator {
     return start_date;
   }
 
-  protected static float average(LinkedList<Float> queue) {
-    float sum = 0;
-    sum = queue.stream().map((e) -> (float) e).reduce(sum, (accumulator, _item) -> accumulator + _item);
+  protected static double average(LinkedList<Double> queue) {
+    double sum = 0;
+    sum = queue.stream().map((e) -> (double) e).reduce(sum, (accumulator, _item) -> accumulator + _item);
     return sum / queue.size();
   }
 
@@ -199,7 +199,7 @@ public class StatCalculator {
       return null;
     }
 
-    return ((float) indicieMomtum - (float) codeMomtum);
+    return ((double) indicieMomtum - (double) codeMomtum);
   }
 
   //Difference to historical average
@@ -215,17 +215,17 @@ public class StatCalculator {
       return "?";
     }
 
-    float last_price = (float) rawDataMap.get(input_date.toString())[YAHOO_DATA_INDEX.CLOSE.ordinal()];
+    double last_price = (double) rawDataMap.get(input_date.toString())[YAHOO_DATA_INDEX.CLOSE.ordinal()];
 
     Random rdn = new Random();
     int count = 0;
-    float sum = 0.0f;
+    double sum = 0;
     while (start_date.isBefore(end_date)) {
       Object[] row = rawDataMap.get(start_date.toString());
       //Using 70% of random data
-      if (row != null && rdn.nextFloat() >= 0.3f) {
+      if (row != null && rdn.nextDouble() >= 0.3) {
         count++;
-        sum += (float) row[YAHOO_DATA_INDEX.CLOSE.ordinal()];
+        sum += (double) row[YAHOO_DATA_INDEX.CLOSE.ordinal()];
       }
       start_date = start_date.plusDays(1);
     }

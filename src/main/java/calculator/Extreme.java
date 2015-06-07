@@ -17,13 +17,13 @@ public class Extreme {
       return null;
     }
 
-    float max = Float.NEGATIVE_INFINITY;
-    float min = Float.POSITIVE_INFINITY;
+    double max = Double.NEGATIVE_INFINITY;
+    double min = Double.POSITIVE_INFINITY;
     start_date = start_date.plusDays(1);
     while (start_date.isBefore(end_date)) {
       Object[] row = rawDataMap.get(start_date.toString());
       if (row != null) {
-        float close = (float) row[GConfigs.YAHOO_DATA_INDEX.CLOSE.ordinal()];
+        double close = (double) row[GConfigs.YAHOO_DATA_INDEX.CLOSE.ordinal()];
         if (max < close) {
           max = close;
         }
@@ -47,12 +47,12 @@ public class Extreme {
       return null;
     }
 
-    float start_price = (float) rawDataMap.get(start_date.toString())[YAHOO_DATA_INDEX.CLOSE.ordinal()];
+    double start_price = (double) rawDataMap.get(start_date.toString())[YAHOO_DATA_INDEX.CLOSE.ordinal()];
     Object ext = getExtreme(date, rawDataMap, distance, duration, getHighest);
     if (ext == null) {
       return null;
     }
-    return ((float) ext - start_price) / start_price;
+    return ((double) ext - start_price) / start_price;
   }
 
   // Was use nominal, but now shift to a semi-nominal numeric representation.
@@ -62,14 +62,15 @@ public class Extreme {
     if (ext == null) {
       return null;
     }
-    return getHighLowClass(type, (float) ext);
+    return getHighLowClass(type, (double) ext);
   }
 
-  public static float getHighLowClass(MODEL_TYPES type, float v) {
-    float sig = GConfigs.getSignificanceNormal(type.name());
+  public static double getHighLowClass(MODEL_TYPES type, double v) {
+    double sig = GConfigs.getSignificanceNormal(type.name());
     //positive or negative
     boolean sign = v >= 0;
     int i = (int) Math.ceil(Math.abs(v) / sig) - 1;
+    //i=Math.round(i);
     if (sign) {
       return i*sig;
     } else {

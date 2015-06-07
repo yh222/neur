@@ -18,8 +18,8 @@ public class LWR {
       return null;
     }
 
-    float close = (float) raw_data[YAHOO_DATA_INDEX.CLOSE.ordinal()];
-    double lwr = ((float) highest - close) / ((float) highest - (float) lowest) * -100;
+    double close = (double) raw_data[YAHOO_DATA_INDEX.CLOSE.ordinal()];
+    double lwr = ((double) highest - close) / ((double) highest - (double) lowest) * -100;
 
     return lwr;
   }
@@ -44,7 +44,7 @@ public class LWR {
       }
       start_date=start_date.plusDays(1);
     }
-    return (float) ma.getAvg();
+    return ma.getAvg();
   }
 
   public static Object getLWR2(String date,

@@ -8,7 +8,6 @@ import java.time.LocalDate;
 import java.util.logging.*;
 import core.GConfigs;
 import static core.GConfigs.RESOURCE_PATH;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import util.MyUtils;
 
@@ -125,12 +124,12 @@ public class STKCSVDownloader {
     if (parts.length < 7 || parts[4].equals(parts[6])) {
       return raw;
     }
-    double split = Float.parseFloat(parts[4]) / Float.parseFloat(parts[6]);
-    double open = Float.parseFloat(parts[1]) / split;
-    double high = Float.parseFloat(parts[2]) / split;
-    double low = Float.parseFloat(parts[3]) / split;
-    double close = Float.parseFloat(parts[4]) / split;
-    double vol = Float.parseFloat(parts[5]) / split;
+    double split = Double.parseDouble(parts[4]) / Double.parseDouble(parts[6]);
+    double open = Double.parseDouble(parts[1]) / split;
+    double high = Double.parseDouble(parts[2]) / split;
+    double low = Double.parseDouble(parts[3]) / split;
+    double close = Double.parseDouble(parts[4]) / split;
+    double vol = Double.parseDouble(parts[5]) / split;
 
     return parts[0] + "," + open + "," + high + "," + low + "," + close + "," + vol + "," + parts[6];
   }

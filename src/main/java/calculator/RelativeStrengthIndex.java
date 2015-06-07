@@ -1,5 +1,6 @@
 package calculator;
 
+import core.GConfigs;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -9,7 +10,7 @@ import util.MyUtils;
 public class RelativeStrengthIndex {
 
   // RSI_map_type(duration)-> <Date, RSI_value>
-  private final HashMap<Integer, HashMap<String, Float>> m_RSIMap;
+  private final HashMap<Integer, HashMap<String, Double>> m_RSIMap;
 
   public RelativeStrengthIndex() {
     m_RSIMap = new HashMap();
@@ -18,7 +19,7 @@ public class RelativeStrengthIndex {
   public Object getRSI(String date, int rsiDuration, int distance,
           ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException {
 
-    HashMap<String, Float> rsi = m_RSIMap.get(rsiDuration);
+    HashMap<String, Double> rsi = m_RSIMap.get(rsiDuration);
     if (rsi == null) {
       m_RSIMap.put(rsiDuration, new HashMap());
       rsi = m_RSIMap.get(rsiDuration);
@@ -39,7 +40,7 @@ public class RelativeStrengthIndex {
 
   private void calculateRSI(int rsiDuration,
           ConcurrentHashMap<String, Object[]> rawDataMap,
-          HashMap<String, Float> rsi) throws ParseException {
+          HashMap<String, Double> rsi) throws ParseException {
     LocalDate start_date = StatCalculator.getFirstValidDate(rawDataMap);
     Object[] raw_data = rawDataMap.get(start_date.toString());
     if (raw_data == null) {
@@ -47,9 +48,9 @@ public class RelativeStrengthIndex {
       return;
     }
 
-    float loss, gain, p_avg_loss = 0, p_avg_gain = 0,
+    double loss, gain, p_avg_loss = 0, p_avg_gain = 0,
             rs, change, p, t_rsi;
-    float prev = (float) raw_data[3];
+    double prev = (double) raw_data[3];
     int buffer = 10;
 
     while (buffer > 0) {
@@ -59,7 +60,7 @@ public class RelativeStrengthIndex {
         buffer--;
       } else {
         buffer = 10;
-        p = (float) raw_data[3];
+        p = (double) raw_data[GConfigs.YAHOO_DATA_INDEX.CLOSE.ordinal()];
         change = p - prev;
         prev = p;
 

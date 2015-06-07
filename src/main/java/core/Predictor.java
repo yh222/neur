@@ -19,8 +19,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import util.MyUtils;
 import weka.classifiers.Classifier;
 import weka.classifiers.misc.InputMappedClassifier;
@@ -34,7 +32,7 @@ public class Predictor {
   private final ConcurrentHashMap<String, LinkedHashMap<String, Object[]>> m_Models
           = new ConcurrentHashMap();
 
-  private final ConcurrentHashMap<String, Boolean> m_Notables = new ConcurrentHashMap();
+  private final ConcurrentHashMap<String, ConcurrentHashMap<String, ArrayList>> m_Notables = new ConcurrentHashMap();
 
   private final String m_TypePath;
 
@@ -44,9 +42,9 @@ public class Predictor {
 
   // Load all models and associated performance data of a given instrument
   private LinkedHashMap<String, Object[]> loadModelsAndPerformances(String code) throws IOException, ClassNotFoundException {
-    if (m_Models.get(code) == null) {
-      m_Models.put(code, new LinkedHashMap());
-    }
+//    if (m_Models.get(code) == null) {
+//      m_Models.put(code, new LinkedHashMap());
+//    }
     //Classifier id -> [classifier,performance_array]
     //LinkedHashMap<String, Object[]> local_map = m_Models.get(code);
     LinkedHashMap<String, Object[]> local_map = new LinkedHashMap();
@@ -72,7 +70,7 @@ public class Predictor {
         store[0] = classifier;
         store[2] = trainHeader;
       } else if (fname.endsWith(".perf")) {
-        float[] performance = (float[]) objectInputStream.readObject();
+        double[] performance = (double[]) objectInputStream.readObject();
         store[1] = performance;
       }
     }
@@ -106,7 +104,7 @@ public class Predictor {
       } catch (IOException | ClassNotFoundException ex) {
         Logger.getLogger(Predictor.class.getName()).log(Level.SEVERE, null, ex);
       } catch (Exception ex) {
-        Logger.getLogger(Predictor.class.getName()).log(Level.SEVERE, null, ex);
+        Logger.getLogger(Predictor.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
       }
     }
   }
@@ -117,7 +115,11 @@ public class Predictor {
    */
   private void makePrediction(String code) throws Exception {
     // Class_att -> rank_mark
-    LinkedHashMap<String, Float> infusedRanks = new LinkedHashMap();
+    if (!m_Notables.containsKey(code)) {
+      m_Notables.put(code, new ConcurrentHashMap<>());
+    }
+    ConcurrentHashMap notables_local = m_Notables.get(code);
+
     Instances inputValues = MyUtils.loadInstancesFromCSV(GConfigs.RESOURCE_PATH
             + this.m_TypePath + code + "//" + code + "_Training.csv");
     NumberFormat defaultFormat = NumberFormat.getNumberInstance();
@@ -129,24 +131,20 @@ public class Predictor {
             new FileWriter(new File(REPORT_PATH + m_TypePath + code + "_Prediction.csv"), false)))) {
       for (Entry<String, Object[]> p : loadModelsAndPerformances(code).entrySet()) {
         String identity = p.getKey();
-        float result;
-        float[] evaluations = (float[]) p.getValue()[1];
-        float false_positive = evaluations[1];
+        double result;
+        double[] evaluations = (double[]) p.getValue()[1];
+        double false_positive = evaluations[1];
+        double false_random = evaluations[2];
         Instances train_header = (Instances) p.getValue()[2];
         Attribute class_attribute = train_header.classAttribute();
+        String class_name = class_attribute.name();
         //Need to distinguish forecaster and classifier
         if (p.getKey().contains("Series")) {
           WekaForecaster forecaster = (WekaForecaster) p.getValue()[0];
           forecaster.primeForecaster(train_header);
-          String class_name = train_header.classAttribute().name();
-          String dayptn = "(\\d+)(d)";
-          Pattern pattern_days = Pattern.compile(dayptn);
-          Matcher matcher;
-          matcher = pattern_days.matcher(class_name);
-          matcher.find();
           //Find the days range in the class attribute
-          int days_to_advance = Integer.parseInt(matcher.group(1));
-          result = (float) forecaster.forecast(days_to_advance).get(0).get(0).predicted();
+          int days_to_advance = MyUtils.getDaysToAdvance(class_name);
+          result = (double) forecaster.forecast(days_to_advance).get(0).get(0).predicted();
         } else {
           Object o = p.getValue()[0];
           InputMappedClassifier classifier = new InputMappedClassifier();
@@ -154,31 +152,53 @@ public class Predictor {
           classifier.setModelHeader(train_header);
           classifier.setTestStructure(inputValues);
           classifier.setSuppressMappingReport(true);
-          result = (float) classifier.classifyInstance(inputValues.get(inputValues.size() - 1));
+          result = (double) classifier.classifyInstance(inputValues.get(inputValues.size() - 1));
 
         }
+        
         if (class_attribute.isNominal()) {//If this is a nominal class
-          writer.println(class_attribute.name() + "," + class_attribute.value((int) result)
-                  + "," + defaultFormat.format(false_positive) + "," + identity);
+          writer.println(class_name + "," + class_attribute.value((int) result)
+                  + "," + defaultFormat.format(false_positive) + "," + defaultFormat.format(false_random) + "," + identity);
         } else {//If this is a numeric class
-          writer.println(class_attribute.name() + "," + defaultFormat.format(result)
-                  + "," + defaultFormat.format(false_positive) + "," + identity);
+          writer.println(class_name + "," + defaultFormat.format(result)
+                  + "," + defaultFormat.format(false_positive) + "," + defaultFormat.format(false_random) + "," + identity);
         }
 
-      }
-
-      // Filter notable instruments
-      try (PrintWriter writer2 = new PrintWriter(new BufferedWriter(
-              new FileWriter(new File(REPORT_PATH + m_TypePath + code + "_InfusedPrediction.csv"), false)))) {
-        boolean notable = false;
-        for (Entry<String, Float> e : infusedRanks.entrySet()) {
-          //writer2.println(e.getKey() + "," + defaultFormat.format(e.getValue()));
-          if (e.getValue() / (inputValues.size()) == 4) {
-            notable = true;
+        if ((false_positive <= 0.33 || false_random <= 0.25) && result > GConfigs.getSignificanceNormal(this.m_TypePath)) {
+          if (!notables_local.containsKey(class_name)) {
+            notables_local.put(class_name, new ArrayList());
           }
+          ArrayList arr = (ArrayList) notables_local.get(class_name);
+          arr.add(new Object[]{identity, evaluations, result});
         }
-        if (notable) {
-          System.out.println(code + " is notable");
+      }
+    }
+    outputNotables();
+  }
+
+  private void outputNotables() throws Exception {
+    try (PrintWriter writer = new PrintWriter(new BufferedWriter(
+            new FileWriter(new File(REPORT_PATH + "summary.csv"), false)))) {
+      for (Entry class_att_map : this.m_Notables.entrySet()) {
+        //String code = (String) class_att_map.getKey();
+        boolean header = false;
+        ConcurrentHashMap<String, ArrayList> map = (ConcurrentHashMap) class_att_map.getValue();
+        for (Entry local_map : map.entrySet()) {
+          ArrayList<Object[]> arr = (ArrayList) local_map.getValue();
+          if (arr.size() >= 3) {
+            if (!header) {
+              writer.println(class_att_map.getKey());
+              header = true;
+            }
+            writer.println(local_map.getKey());
+            for (Object[] oray : arr) {
+              double[] evals = (double[]) oray[1];
+              writer.println(oray[2] + "," + evals[1] + "," + evals[2] + "," + oray[0]);
+            }
+          }
+          if (header) {
+            writer.println("****************");
+          }
         }
       }
     }

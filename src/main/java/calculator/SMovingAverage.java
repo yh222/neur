@@ -7,7 +7,7 @@ public class SMovingAverage {
 
   private final Queue<Double> window = new LinkedList<>();
   private final int period;
-  private float sum;
+  private double sum;
 
   public SMovingAverage(int period) {
     assert period > 0 : "Period must be a positive integer";

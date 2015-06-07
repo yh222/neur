@@ -18,70 +18,72 @@ public class ProjectSPA {
 
     ArrayList<String> seriesClassifierNames = new ArrayList();
     ArrayList<String[]> SeriesOptionsList = new ArrayList();
+    //  classifierNames.add("weka.classifiers.trees.RandomForest");
+    //  optionsList.add(new String[]{"-I", "40", "-depth", "10"});
 
-    classifierNames.add("weka.classifiers.trees.RandomForest");
-    optionsList.add(new String[]{"-I", "40", "-depth", "10"});
-    
+    //    classifierNames.add("weka.classifiers.functions.RBFNetwork");
+    //    optionsList.add(new String[]{"-B", "2", "-S", "1", "-R", "1.0E-8", "-M", "-1", "-W", "0.1"});
+    //
+    //       classifierNames.add("weka.classifiers.functions.RBFClassifier");
+    //    optionsList.add(new String[]{"-N", "2", "-S", "1", "-R", "0.01", "-L", "1.0E-6", "-C", "2","-P","1","-E","1"});
+//    classifierNames.add("weka.classifiers.rules.Ridor");
+//    optionsList.add(new String[]{"-F", "3", "-S", "1", "-N", "2"});
+    classifierNames.add("weka.classifiers.rules.NNge");
+    optionsList.add(new String[]{"-G", "5", "-I", "5"});
+
+    classifierNames.add("weka.classifiers.rules.JRip");
+    optionsList.add(new String[]{"-F", "3", "-S", "1", "-N", "2", "-O", "2"});
+
+    classifierNames.add("weka.classifiers.misc.VFI");
+    optionsList.add(new String[]{"-B", "0.6"});
+
+    classifierNames.add("weka.classifiers.functions.MLPClassifier");
+    optionsList.add(new String[]{"-N", "2", "-R", "0.01", "-O", "1.0E-6"
+            , "-P", "1", "-E", "1", "-S", "1"});
+
+//    classifierNames.add("weka.classifiers.functions.ArtmapNew");
+//    optionsList.add(new String[]{});
 //     classifierNames.add("weka.classifiers.meta.RotationForest");
 //    optionsList.add(new String[]{"-G", "3", "-H", "3","-P","50","-F"
 //            ,"weka.filters.unsupervised.attribute.PrincipalComponents -R 1.0 -A 5 -M -1","-S","1","-I","10"
 //    ,"-W","weka.classifiers.trees.J48","--","-C","0.25","-M","2"});   
-    
 //        classifierNames.add("weka.classifiers.meta.RotationForest");
 //    optionsList.add(new String[]{"-G", "3", "-H", "3","-P","50","-F"
 //            ,"weka.filters.unsupervised.attribute.RandomProjection -N 10 -R 42 -D Sparse1","-S","1","-I","10"
 //    ,"-W","weka.classifiers.trees.J48","--","-C","0.25","-M","2"}); 
-
-    
 //         classifierNames.add("weka.classifiers.meta.RotationForest");
 //    optionsList.add(new String[]{"-G", "3", "-H", "3","-P","50","-F"
 //            ,"weka.filters.unsupervised.attribute.RandomSubset -N 0.5 -S 1","-S","1","-I","10"
 //    ,"-W","weka.classifiers.trees.RandomTree","--","-K","0","-M","1.0","-V","0.001","-S","1"});     
-
 //        classifierNames.add("weka.classifiers.meta.RotationForest");
 //    optionsList.add(new String[]{"-G", "3", "-H", "3","-P","50","-F"
 //            ,"weka.filters.unsupervised.attribute.PrincipalComponents  -R 1.0 -A 5 -M -1","-S","1","-I","10"
 //    ,"-W","weka.classifiers.trees.M5P","--","-M","4"}); 
-
-    
 //    classifierNames.add("weka.classifiers.functions.MultilayerPerceptron");
 //    optionsList.add(new String[]{"-H", "a", "-N", "200", "-L", "0.03", "-M", "0.1"});
+//    
 //        classifierNames.add("weka.classifiers.functions.MultilayerPerceptronCS");
 //    optionsList.add(new String[]{"-H", "a", "-N", "200", "-L", "0.03", "-M", "0.1"});
-    
+//    
 //    classifierNames.add("weka.classifiers.trees.J48");
 //    optionsList.add(new String[]{"-C", "0.25", "-M", "2"});
-
-    
 //    classifierNames.add("weka.classifiers.trees.HoeffdingTree");
 //    optionsList.add(new String[]{"-L", "2", "-S", "1", "-E", "0.000001", "-H", "0.5"
 //            , "-M", "0.01","-G","200","-N","0.0"});
-    
-   //classifierNames.add("weka.classifiers.rules.FURIA");
-   // optionsList.add(new String[]{"-F", "3", "-N", "2.0","-O","2","-S","1","-p","0","-s","0"});
+//    
+//   classifierNames.add("weka.classifiers.rules.FURIA");
+//    optionsList.add(new String[]{"-F", "3", "-N", "2.0","-O","2","-S","1","-p","0","-s","0"});
 //    classifierNames.add("weka.classifiers.trees.M5P");
 //    optionsList.add(new String[]{   "-M", "4.0"});
-
-    
+//
+//    
 //       classifierNames.add("weka.classifiers.rules.PART");
 //    optionsList.add(new String[]{   "-M", "2","-C","0.25","-Q","1"});
-    
-    
-    
-//    classifierNames.add("weka.classifiers.meta.CostSensitiveClassifier");
-//    optionsList.add(new String[]{"-cost-matrix", "\"" + matrix + "\"",
-//      "-W", "weka.classifiers.trees.RandomForest", "--", "-I", "40", "-depth", "10"});
-//    classifierNames.add("weka.classifiers.meta.CostSensitiveClassifier");
-//    optionsList.add(new String[]{"-cost-matrix", "\"" + matrix + "\"",
-//      "-W", "weka.classifiers.functions.MultilayerPerceptron", "--", "-H", "a", "-N", "200"});
 //    classifierNames.add("weka.classifiers.trees.RandomForest");
 //    optionsList.add(new String[]{"-I", "40", "-depth", "10"});
 //
 //    classifierNames.add("weka.classifiers.functions.MultilayerPerceptron");
 //    optionsList.add(new String[]{"-H", "a", "-N", "150"});
-//    classifierNames.add("weka.classifiers.meta.CostSensitiveClassifier");
-//    optionsList.add(new String[]{"-cost-matrix", "\"" + matrix + "\"",
-//      "-W", "weka.classifiers.meta.RotationForest", "--", "-I", "5"});
     ExecutorService executor = Executors.newFixedThreadPool(6);
 
     ArrayList<String> instruments = GConfigs.INSTRUMENT_CODES;

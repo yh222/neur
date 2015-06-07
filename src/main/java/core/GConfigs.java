@@ -5,10 +5,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -37,7 +34,7 @@ public class GConfigs {
   public static final String IXIC = "^IXIC";
   //public static final String GSPC = "^GSPC";
   public static final int[] WEEK_MULTIPIER_TRAIN = new int[]{2, 4, 10};
-  public static final int[] WEEK_MULTIPIER_CLASS = new int[]{1, 2, 3, 5};
+  public static final int[] WEEK_MULTIPIER_CLASS = new int[]{1, 2, 3, 4, 5};
 
   //Marker for numeric class attributes
   public static final String CLS = "C_";
@@ -102,14 +99,14 @@ public class GConfigs {
 
   public static ArrayList<String> ClassTags = new ArrayList();
 
-  private static ConcurrentHashMap<String, Float> NormalSigMap;
+  private static ConcurrentHashMap<String, Double> NormalSigMap;
 
-  public static final float getSignificanceNormal(String type) {
+  public static final double getSignificanceNormal(String type) {
 
     if (type.contains(MODEL_TYPES.FX.name())) {
-      return 0.004f;
+      return 0.004;
     } else {
-      return 0.02f;
+      return 0.01;
     }
 
 //        if (NormalSigMap == null) {
@@ -121,11 +118,10 @@ public class GConfigs {
 //        }
   }
 
+  private static ConcurrentHashMap<String, Double> DailySigMap;
 
-  private static ConcurrentHashMap<String, Float> DailySigMap;
-
-  public static final float getSignificanceDaily() {
-    return 0.015f;
+  public static final double getSignificanceDaily() {
+    return 0.015;
   }
 
   private static ArrayList<String> loadInstrumentCodes(String path, int location) {

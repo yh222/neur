@@ -1,6 +1,5 @@
 package util;
 
-import core.GConfigs;
 import static core.GConfigs.MODEL_PATH;
 import java.io.BufferedReader;
 import java.io.File;
@@ -14,7 +13,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import weka.classifiers.Classifier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import weka.core.Instances;
 import weka.core.converters.CSVLoader;
 
@@ -75,10 +75,19 @@ public class MyUtils {
     return null;
   }
 
+  public static int getDaysToAdvance(String str) {
+    String dayptn = "(\\d+)(d)";
+    Pattern pattern_days = Pattern.compile(dayptn);
+    Matcher matcher;
+    matcher = pattern_days.matcher(str);
+    matcher.find();
+    return Integer.parseInt(matcher.group(1));
+  }
+
   public static void saveModelAndPerformance(String code,
           String identity, String typePath,
           Object classifier, Instances dataStructure,
-          float[] evaluation) {
+          double[] evaluation) {
 
     String dir = MODEL_PATH + typePath + code + "//";
     MyUtils.findOrCreateFolder(dir);
@@ -103,8 +112,41 @@ public class MyUtils {
     } catch (Exception e) {
       Logger.getLogger(MyUtils.class.getName()).log(Level.SEVERE, e.getMessage(), e);
     }
-
   }
+  
+  
+  public static void deleteModelFolder(String typePath) {
+    String dir = MODEL_PATH + typePath;
+    MyUtils.findOrCreateFolder(dir);
+    File folder = new File(dir);
+    File[] files = folder.listFiles();
+    if (files != null) {
+      for (File f : files) {
+        if (f.isDirectory()) {
+          deleteDirectory(f);
+        } else {
+          f.delete();
+        }
+      }
+    }
+  }
+  
+  public static boolean deleteDirectory(File directory) {
+    if(directory.exists()){
+        File[] files = directory.listFiles();
+        if(null!=files){
+            for(int i=0; i<files.length; i++) {
+                if(files[i].isDirectory()) {
+                    deleteDirectory(files[i]);
+                }
+                else {
+                    files[i].delete();
+                }
+            }
+        }
+    }
+    return(directory.delete());
+}
 
   public static LocalDate getLastDateFromFile(File file) {
     if (file.isFile()) {

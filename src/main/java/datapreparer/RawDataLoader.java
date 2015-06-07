@@ -1,6 +1,5 @@
 package datapreparer;
 
-import core.GConfigs;
 import core.GConfigs.YAHOO_DATA_INDEX;
 import core.TrainingFileGenerator;
 import static core.GConfigs.RESOURCE_PATH;
@@ -11,7 +10,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import util.MyUtils;
-import weka.core.Instances;
 
 public class RawDataLoader {
 
@@ -32,11 +30,11 @@ public class RawDataLoader {
         while ((line = reader.readLine()) != null) {
           String[] parts = line.split(",");
           Object[] data = new Object[]{parts[YAHOO_DATA_INDEX.DATE.ordinal()],
-            Float.parseFloat(parts[YAHOO_DATA_INDEX.OPEN.ordinal()]),
-            Float.parseFloat(parts[YAHOO_DATA_INDEX.HIGH.ordinal()]),
-            Float.parseFloat(parts[YAHOO_DATA_INDEX.LOW.ordinal()]),
-            Float.parseFloat(parts[YAHOO_DATA_INDEX.CLOSE.ordinal()]),
-            Float.parseFloat(parts[YAHOO_DATA_INDEX.VOLUME.ordinal()])};
+            Double.parseDouble(parts[YAHOO_DATA_INDEX.OPEN.ordinal()]),
+            Double.parseDouble(parts[YAHOO_DATA_INDEX.HIGH.ordinal()]),
+            Double.parseDouble(parts[YAHOO_DATA_INDEX.LOW.ordinal()]),
+            Double.parseDouble(parts[YAHOO_DATA_INDEX.CLOSE.ordinal()]),
+            Double.parseDouble(parts[YAHOO_DATA_INDEX.VOLUME.ordinal()])};
           raw_data_map.put(parts[0], data);
         }
       } catch (Exception ex) {

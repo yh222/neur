@@ -26,18 +26,18 @@ public class CandleStick {
     if (raw_data == null || temp == null) {
       return null;
     }
-    float mom = (float) temp;
-    float momthresh = 0.015f;
-    float sig = getSignificanceDaily();
+    double mom = (double) temp;
+    double momthresh = 0.015;
+    double sig = getSignificanceDaily();
 
-    float topen = (float) raw_data[YAHOO_DATA_INDEX.OPEN.ordinal()];
-    float tclose = (float) raw_data[YAHOO_DATA_INDEX.CLOSE.ordinal()];
-    float thigh = (float) raw_data[YAHOO_DATA_INDEX.HIGH.ordinal()];
-    float tlow = (float) raw_data[YAHOO_DATA_INDEX.LOW.ordinal()];
+    double topen = (double) raw_data[YAHOO_DATA_INDEX.OPEN.ordinal()];
+    double tclose = (double) raw_data[YAHOO_DATA_INDEX.CLOSE.ordinal()];
+    double thigh = (double) raw_data[YAHOO_DATA_INDEX.HIGH.ordinal()];
+    double tlow = (double) raw_data[YAHOO_DATA_INDEX.LOW.ordinal()];
 
-    float tbody = tclose - topen;
-    float tutail = tbody > 0 ? (thigh - tclose) : (thigh - topen);
-    float tdtail = tbody > 0 ? (topen - tlow) : (tclose - tlow);
+    double tbody = tclose - topen;
+    double tutail = tbody > 0 ? (thigh - tclose) : (thigh - topen);
+    double tdtail = tbody > 0 ? (topen - tlow) : (tclose - tlow);
 
     LocalDate yesterday = MyUtils.getUsableDate(date, rawDataMap, 1, 1, true, true);
     raw_data = rawDataMap.get(yesterday.toString());
@@ -45,10 +45,10 @@ public class CandleStick {
       return null;
     }
 
-    float yopen = (float) raw_data[YAHOO_DATA_INDEX.OPEN.ordinal()];
-    float yclose = (float) raw_data[YAHOO_DATA_INDEX.CLOSE.ordinal()];
-    float yhigh = (float) raw_data[YAHOO_DATA_INDEX.HIGH.ordinal()];
-    float ybody = yclose - yopen;
+    double yopen = (double) raw_data[YAHOO_DATA_INDEX.OPEN.ordinal()];
+    double yclose = (double) raw_data[YAHOO_DATA_INDEX.CLOSE.ordinal()];
+    double yhigh = (double) raw_data[YAHOO_DATA_INDEX.HIGH.ordinal()];
+    double ybody = yclose - yopen;
 
     // Bearish Belt Holt: short down shadow, period bullish, long neg body
     if (mom > momthresh && tbody < sig * -2 && tdtail < sig * 0.5 && tutail == 0) {
@@ -173,16 +173,16 @@ public class CandleStick {
   }
 
   private static m_READS readCandleChartUnit(Object[] rawData) {
-    float sig = getSignificanceDaily();
-    float open = (float) rawData[YAHOO_DATA_INDEX.OPEN.ordinal()];
-    float high = (float) rawData[YAHOO_DATA_INDEX.HIGH.ordinal()];
-    float low = (float) rawData[YAHOO_DATA_INDEX.LOW.ordinal()];
-    float close = (float) rawData[YAHOO_DATA_INDEX.CLOSE.ordinal()];
-    float avg = (open + close) / 2;
-    float trend = (close - open) / avg;
-    float uptail = trend > 0 ? (high - close) / avg : (high - open) / avg;
-    float downtail = trend > 0 ? (open - low) / avg : (close - low) / avg;
-    float tail = 1 * sig;
+    double sig = getSignificanceDaily();
+    double open = (double) rawData[YAHOO_DATA_INDEX.OPEN.ordinal()];
+    double high = (double) rawData[YAHOO_DATA_INDEX.HIGH.ordinal()];
+    double low = (double) rawData[YAHOO_DATA_INDEX.LOW.ordinal()];
+    double close = (double) rawData[YAHOO_DATA_INDEX.CLOSE.ordinal()];
+    double avg = (open + close) / 2;
+    double trend = (close - open) / avg;
+    double uptail = trend > 0 ? (high - close) / avg : (high - open) / avg;
+    double downtail = trend > 0 ? (open - low) / avg : (close - low) / avg;
+    double tail = 1 * sig;
     if (trend > 3.0 * sig) {
       return m_READS.GreatW;
     } else if (trend < -3.0 * sig) {
