@@ -20,6 +20,7 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import util.MyUtils;
+import static util.MyUtils.roundDouble;
 import weka.classifiers.Classifier;
 import weka.classifiers.misc.InputMappedClassifier;
 import weka.classifiers.timeseries.WekaForecaster;
@@ -122,9 +123,6 @@ public class Predictor {
 
     Instances inputValues = MyUtils.loadInstancesFromCSV(GConfigs.RESOURCE_PATH
             + this.m_TypePath + code + "//" + code + "_Training.csv");
-    NumberFormat defaultFormat = NumberFormat.getNumberInstance();
-    defaultFormat.setMinimumFractionDigits(2);
-    defaultFormat.setMaximumFractionDigits(3);
 
     //System.out.println("Instrument: " + code);
     try (PrintWriter writer = new PrintWriter(new BufferedWriter(
@@ -158,10 +156,10 @@ public class Predictor {
         
         if (class_attribute.isNominal()) {//If this is a nominal class
           writer.println(class_name + "," + class_attribute.value((int) result)
-                  + "," + defaultFormat.format(false_positive) + "," + defaultFormat.format(false_random) + "," + identity);
+                  + "," + roundDouble(false_positive) + "," + roundDouble(false_random) + "," + identity);
         } else {//If this is a numeric class
-          writer.println(class_name + "," + defaultFormat.format(result)
-                  + "," + defaultFormat.format(false_positive) + "," + defaultFormat.format(false_random) + "," + identity);
+          writer.println(class_name + "," + roundDouble(result)
+                  + "," + roundDouble(false_positive) + "," + roundDouble(false_random) + "," + identity);
         }
 
         if ((false_positive <= 0.33 || false_random <= 0.25) && result > GConfigs.getSignificanceNormal(this.m_TypePath)) {

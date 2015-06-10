@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ConcurrentHashMap;
@@ -113,8 +114,7 @@ public class MyUtils {
       Logger.getLogger(MyUtils.class.getName()).log(Level.SEVERE, e.getMessage(), e);
     }
   }
-  
-  
+
   public static void deleteModelFolder(String typePath) {
     String dir = MODEL_PATH + typePath;
     MyUtils.findOrCreateFolder(dir);
@@ -130,23 +130,29 @@ public class MyUtils {
       }
     }
   }
-  
+
   public static boolean deleteDirectory(File directory) {
-    if(directory.exists()){
-        File[] files = directory.listFiles();
-        if(null!=files){
-            for(int i=0; i<files.length; i++) {
-                if(files[i].isDirectory()) {
-                    deleteDirectory(files[i]);
-                }
-                else {
-                    files[i].delete();
-                }
-            }
+    if (directory.exists()) {
+      File[] files = directory.listFiles();
+      if (null != files) {
+        for (int i = 0; i < files.length; i++) {
+          if (files[i].isDirectory()) {
+            deleteDirectory(files[i]);
+          } else {
+            files[i].delete();
+          }
         }
+      }
     }
-    return(directory.delete());
-}
+    return (directory.delete());
+  }
+
+  public static String roundDouble(double in) {
+    NumberFormat defaultFormat = NumberFormat.getNumberInstance();
+    defaultFormat.setMinimumFractionDigits(3);
+    defaultFormat.setMaximumFractionDigits(3);
+    return defaultFormat.format(in);
+  }
 
   public static LocalDate getLastDateFromFile(File file) {
     if (file.isFile()) {

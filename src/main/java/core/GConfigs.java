@@ -16,7 +16,7 @@ import java.util.logging.Logger;
 public class GConfigs {
 
   //Default start date for data download
-  public static final String DEFAULT_START_DATE = "2014-01-01";
+  public static final String DEFAULT_START_DATE = "2013-01-01";
 
   // Global Value:  project path
   public static final String DEFAULT_PATH = "D:\\Documents\\ProjectSPAData\\";
