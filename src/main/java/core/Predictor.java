@@ -10,15 +10,17 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.PrintWriter;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
+import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import util.MyUtils;
 import static util.MyUtils.roundDouble;
 import weka.classifiers.Classifier;
@@ -68,11 +70,10 @@ public class Predictor {
       if (fname.endsWith(".model")) {
         Object classifier = objectInputStream.readObject();
         Instances trainHeader = (Instances) objectInputStream.readObject();
-        store[0] = classifier;
-        store[2] = trainHeader;
-      } else if (fname.endsWith(".perf")) {
         double[] performance = (double[]) objectInputStream.readObject();
+        store[0] = classifier;
         store[1] = performance;
+        store[2] = trainHeader;
       }
     }
     return local_map;
@@ -87,6 +88,12 @@ public class Predictor {
     }
     executor.shutdown();
     while (!executor.isTerminated()) {
+    }
+
+    try {
+      outputNotables();
+    } catch (Exception ex) {
+      Logger.getLogger(Predictor.class.getName()).log(Level.SEVERE, null, ex);
     }
   }
 
@@ -153,16 +160,29 @@ public class Predictor {
           result = (double) classifier.classifyInstance(inputValues.get(inputValues.size() - 1));
 
         }
-        
+
         if (class_attribute.isNominal()) {//If this is a nominal class
           writer.println(class_name + "," + class_attribute.value((int) result)
-                  + "," + roundDouble(false_positive) + "," + roundDouble(false_random) + "," + identity);
+                  + "," + roundDouble(false_positive) + "," + roundDouble(false_random) + "," + identity.substring(0, identity.indexOf("-")));
+          Scanner st = new Scanner(class_attribute.value((int) result));
+          Pattern ptn = Pattern.compile("(\\d)+\\.(\\d)+");
+          Matcher m = ptn.matcher(class_attribute.value((int) result));
+          m.find();
+          if (class_attribute.value((int) result).contains("inf")) {
+            result = Double.parseDouble(m.group(0));
+          } else {
+            double first = Double.parseDouble(m.group(0));
+            m.find();
+            result = (first + Double.parseDouble(m.group(0))) / 2;
+          }
+
         } else {//If this is a numeric class
           writer.println(class_name + "," + roundDouble(result)
                   + "," + roundDouble(false_positive) + "," + roundDouble(false_random) + "," + identity);
         }
-
-        if ((false_positive <= 0.33 || false_random <= 0.25) && result > GConfigs.getSignificanceNormal(this.m_TypePath)) {
+        
+        double sig = GConfigs.getSignificanceNormal(this.m_TypePath,MyUtils.getDaysToAdvance(class_name));
+        if ((false_positive <= 0.4) && Math.abs(result) >=  sig) {
           if (!notables_local.containsKey(class_name)) {
             notables_local.put(class_name, new ArrayList());
           }
@@ -171,10 +191,9 @@ public class Predictor {
         }
       }
     }
-    outputNotables();
   }
 
-  private void outputNotables() throws Exception {
+  private synchronized void outputNotables() throws Exception {
     try (PrintWriter writer = new PrintWriter(new BufferedWriter(
             new FileWriter(new File(REPORT_PATH + "summary.csv"), false)))) {
       for (Entry class_att_map : this.m_Notables.entrySet()) {
@@ -183,17 +202,19 @@ public class Predictor {
         ConcurrentHashMap<String, ArrayList> map = (ConcurrentHashMap) class_att_map.getValue();
         for (Entry local_map : map.entrySet()) {
           ArrayList<Object[]> arr = (ArrayList) local_map.getValue();
-          if (arr.size() >= 3) {
+          //if (arr.size() >= 3) {
             if (!header) {
+              writer.println("------------------------");
               writer.println(class_att_map.getKey());
               header = true;
             }
             writer.println(local_map.getKey());
             for (Object[] oray : arr) {
               double[] evals = (double[]) oray[1];
-              writer.println(oray[2] + "," + evals[1] + "," + evals[2] + "," + oray[0]);
+              writer.println(roundDouble((double) oray[2]) + "," + roundDouble(evals[1])
+                      + "," + roundDouble(evals[2]) + "," + oray[0]);
             }
-          }
+          //}
           if (header) {
             writer.println("****************");
           }

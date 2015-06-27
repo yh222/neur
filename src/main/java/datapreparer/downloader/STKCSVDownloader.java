@@ -9,6 +9,7 @@ import java.util.logging.*;
 import core.GConfigs;
 import static core.GConfigs.RESOURCE_PATH;
 import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
 import util.MyUtils;
 
 /**
@@ -35,17 +36,27 @@ public class STKCSVDownloader {
       String file_path = RESOURCE_PATH + GConfigs.MODEL_TYPES.STK.name() + "//" + code + "//" + code + type + ".csv";
       LocalDate start_date = LocalDate.now();
 
-      if (isUpToDate(code, file_path)) {
-        continue;
+      File file = new File(file_path);
+      MyUtils.findOrCreateFolder(file.getParentFile().getAbsolutePath());
+
+      start_date = MyUtils.getLastDateFromFile(file);
+      if (start_date != null) {
+        start_date = start_date.plusDays(1);
+        if (start_date.toString().equals(LocalDate.now().toString())) {
+          //if the date is today, skip G
+          System.out.println(code + " is up to date.");
+        }
+      } else {
+        start_date = LocalDate.parse(GConfigs.DEFAULT_START_DATE);
       }
 
       try {
-        int dayDiff = today.compareTo(start_date);
+        int dayDiff = (int) ChronoUnit.DAYS.between(start_date, today);
 
         if (!yhooParameter.equals("")) {
           //download data from yahoo
           URL url = new URL("http://ichart.finance.yahoo.com/table.csv?s="
-                  + code + "&a=" + start_date.get(ChronoField.MONTH_OF_YEAR) + "&b=" + start_date.get(ChronoField.DAY_OF_MONTH) + "&c=" + start_date.get(ChronoField.YEAR)
+                  + code + "&a=" +  start_date.get(ChronoField.DAY_OF_MONTH)+ "&b=" +  start_date.get(ChronoField.MONTH_OF_YEAR)+ "&c=" + start_date.get(ChronoField.YEAR)
                   + "&d=" + today.get(ChronoField.MONTH_OF_YEAR) + "&e=" + today.get(ChronoField.DAY_OF_MONTH) + "&f=" + today.get(ChronoField.YEAR)
                   + "&g=" + yhooParameter + "&ignore=.csv");
           System.out.println("Downloading data for " + code + " from " + url);
@@ -64,23 +75,6 @@ public class STKCSVDownloader {
       }
 
     }
-  }
-
-  // Check if the raw file of an instument is up to date
-  public static boolean isUpToDate(String code, String file_path) {
-    File file = new File(file_path);
-    MyUtils.findOrCreateFolder(file.getParentFile().getAbsolutePath());
-
-    LocalDate start_date = MyUtils.getLastDateFromFile(file);
-    if (start_date != null) {
-      start_date = start_date.plusDays(1);
-      if (start_date.toString().equals(LocalDate.now().toString())) {
-        //if the date is today, skip G
-        System.out.println(code + " is up to date.");
-        return true;
-      }
-    }
-    return false;
   }
 
   private static void downloadDataFromURL(URL url, File file, boolean isYhoo, int dayDiff) {

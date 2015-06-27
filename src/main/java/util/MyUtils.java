@@ -41,7 +41,9 @@ public class MyUtils {
     return data;
   }
 
-  public static LocalDate getUsableDate(String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration, boolean isStart, boolean useEffevtiveDay) {
+  public static LocalDate getUsableDate(String date,
+          ConcurrentHashMap<String, Object[]> rawDataMap, int distance,
+          int duration, boolean isStart, boolean useEffevtiveDay) {
     LocalDate tempdate = parseToISO(date);
     int direction;
     int count;
@@ -100,15 +102,6 @@ public class MyUtils {
             = new ObjectOutputStream(new FileOutputStream(file, false))) {
       objectOutputStream.writeObject(classifier);
       objectOutputStream.writeObject(dataStructure);
-    } catch (Exception e) {
-      Logger.getLogger(MyUtils.class.getName()).log(Level.SEVERE, e.getMessage(), e);
-    }
-
-    //Save performance
-    fname = identity + ".perf";
-    file = new File(dir + fname);
-    try (ObjectOutputStream objectOutputStream
-            = new ObjectOutputStream(new FileOutputStream(file, false))) {
       objectOutputStream.writeObject(evaluation);
     } catch (Exception e) {
       Logger.getLogger(MyUtils.class.getName()).log(Level.SEVERE, e.getMessage(), e);
@@ -166,7 +159,8 @@ public class MyUtils {
         }
 
         if (last_line.length() > 10) {
-          LocalDate last_date = LocalDate.parse(last_line.substring(0, 10), DateTimeFormatter.ISO_LOCAL_DATE);
+          LocalDate last_date = LocalDate.parse(last_line.substring(0, 10),
+                  DateTimeFormatter.ISO_LOCAL_DATE);
           return last_date;
         }
       } catch (FileNotFoundException ex) {

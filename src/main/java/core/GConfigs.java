@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -25,9 +27,12 @@ public class GConfigs {
   public static final String TEMP_PATH = DEFAULT_PATH + "temp\\";
   public static final String REPORT_PATH = DEFAULT_PATH + "reports\\";
 
-  public static final ArrayList<String> INSTRUMENT_CODES = loadInstrumentCodes(DEFAULT_PATH + "resources\\STK\\instrument_list.txt", 0);
-  public static final ArrayList<String> INDICE_CODES = loadInstrumentCodes(DEFAULT_PATH + "resources\\STK\\indice_list.txt", 0);
-  public static final ArrayList<String> FX_CODES = loadInstrumentCodes(DEFAULT_PATH + "resources\\FX\\fx_codes.txt", 0);
+  public static final ArrayList<String> INSTRUMENT_CODES = 
+          loadInstrumentCodes(DEFAULT_PATH + "resources\\STK\\instrument_list.txt", 0);
+  public static final ArrayList<String> INDICE_CODES = 
+          loadInstrumentCodes(DEFAULT_PATH + "resources\\STK\\indice_list.txt", 0);
+  public static final ArrayList<String> FX_CODES = 
+          loadInstrumentCodes(DEFAULT_PATH + "resources\\FX\\fx_codes.txt", 0);
 
   //  Not using this now
   //  public static ConcurrentHashMap<String, String> WIKI_TITTLES;
@@ -61,7 +66,6 @@ public class GConfigs {
   }
 
   private static int m_ClassCount = 0;
-  private static int m_TrainingCount = 0;
 
   public static int getClassCount(String modelType) {
     if (m_ClassCount == 0) {
@@ -70,15 +74,7 @@ public class GConfigs {
     return m_ClassCount;
   }
 
-  public static int getTrainingCount(String modelType) {
-    if (m_TrainingCount == 0) {
-      updateAttCounts(modelType);
-    }
-    return m_TrainingCount;
-  }
-
   private synchronized static void updateAttCounts(String modelTypePath) {
-    m_TrainingCount = 0;
     m_ClassCount = 0;
     ClassTags = new ArrayList();
     try (BufferedReader reader = new BufferedReader(
@@ -88,8 +84,6 @@ public class GConfigs {
         if (line.regionMatches(0, CLS, 0, CLS.length())) {
           m_ClassCount++;
           ClassTags.add(line);
-        } else {
-          m_TrainingCount++;
         }
       }
     } catch (Exception ex) {
@@ -101,21 +95,45 @@ public class GConfigs {
 
   private static ConcurrentHashMap<String, Double> NormalSigMap;
 
-  public static final double getSignificanceNormal(String type) {
+  public static final double getSignificanceNormal(String type, int daysAdv) {
 
     if (type.contains(MODEL_TYPES.FX.name())) {
       return 0.004;
     } else {
-      return 0.01;
-    }
+      int multi = 1;
+      if (daysAdv > 5 && daysAdv <= 20) {
+        multi = 2;
+      } else if (daysAdv > 20) {
+        multi = 3;
+      }
+      return 0.01 * multi;
 
-//        if (NormalSigMap == null) {
-//            loadSignificanceMaps();
-//        } else if (NormalSigMap.containsKey(code)) {
-//            return NormalSigMap.get(code);
-//        } else {
-//            
-//        }
+    }
+  }
+
+  // tag -> list of tags in bundle
+  private static HashMap<String, HashSet<String>> m_Bundles;
+
+  public static final HashSet<String> getBundle(String tag) {
+    if (m_Bundles == null) {
+      m_Bundles = new HashMap<>();
+      try (BufferedReader reader = new BufferedReader(
+              new FileReader(RESOURCE_PATH + "STK\\bundles.txt"))) {
+        String line;
+        String[] split;
+        while ((line = reader.readLine()) != null) {
+          split = line.split(",");
+          HashSet l = new HashSet<>();
+          for (String s : split) {
+            l.add(s);
+            m_Bundles.put(s, l);
+          }
+        }
+      } catch (Exception ex) {
+        Logger.getLogger(GConfigs.class.getName()).log(Level.SEVERE, null, ex);
+      }
+    }
+    return m_Bundles.get(tag);
   }
 
   private static ConcurrentHashMap<String, Double> DailySigMap;
@@ -145,5 +163,4 @@ public class GConfigs {
     }
     return codes;
   }
-
 }
