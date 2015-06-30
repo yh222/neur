@@ -35,12 +35,13 @@ public class STKClassValueMaker {
 //            Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
 //                    rawDataMap, 0, 10, true));
 //    
-//        storageRow.put(GConfigs.CLS + "Lowest5d",
+//        storageRow.put(GConfigs.CLS + "Lowest10d",
 //            Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
-//                    rawDataMap, 0, 5, false));
+//                    rawDataMap, 0, 10, false));
 //    storageRow.put(GConfigs.CLS + "Lowest15d",
 //            Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
 //                    rawDataMap, 0, 15, false));
+    
     for (int i = 0; i < WEEK_MULTIPIER_CLASS.length; i++) {
       days = WEEK_MULTIPIER_CLASS[i] * DaysInWeek;
       storageRow.put(GConfigs.CLS + "Highest" + String.format("%02d", days) + "d",
@@ -102,9 +103,10 @@ public class STKClassValueMaker {
   }
 
   private static void addSignals(String date, ConcurrentHashMap<String, Object[]> rawDataMap, HashMap<String, Object> storageRow) {
-    storageRow.put(GConfigs.CLS + "Signal" + String.format("%02d", 5) + "d",
-            Signal.getSignal(MODEL_TYPES.STK, date, rawDataMap, 5));
-    
+    storageRow.put(GConfigs.CLS + "UpSignal" + String.format("%02d", 10) + "d",
+            Signal.getUpSignal(MODEL_TYPES.STK, date, rawDataMap, 10));
+    storageRow.put(GConfigs.CLS + "DownSignal" + String.format("%02d", 10) + "d",
+            Signal.getDownSignal(MODEL_TYPES.STK, date, rawDataMap, 10));
   }
 
 }

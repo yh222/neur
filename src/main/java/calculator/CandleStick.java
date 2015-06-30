@@ -128,7 +128,7 @@ public class CandleStick {
     LocalDate tempdate = LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE);
     int buffer_count = (int) (distance * 0.6) + 3;
     for (int i = distance; i > 0; i--) {
-     tempdate= tempdate.plusDays(-1);
+      tempdate = tempdate.plusDays(-1);
       if (rawDataMap.get(tempdate.toString()) == null) {
         i++;
         if (--buffer_count == 0) {
@@ -165,7 +165,7 @@ public class CandleStick {
         read = readCandleChartUnit(rawData);
         tempResult[read.ordinal()]++;
       }
-      start_date=start_date.plusDays(1);
+      start_date = start_date.plusDays(1);
     }
     for (int i = 0; i < m_READS.SIZE; i++) {
       targetToInsert.put(reads[i].name() + duration + "d", tempResult[i]);
@@ -214,28 +214,7 @@ public class CandleStick {
         return m_READS.ShortB;
       }
     }
-    if (trend > 0) {
-      if (uptail > tail && downtail > tail) {
-        return m_READS.StarWTT;
-      } else if (uptail > tail) {
-        return m_READS.StarWU;
-      } else if (downtail > tail) {
-        return m_READS.StarWD;
-      } else {
-        return m_READS.StarW;
-      }
-    } else if (trend <= 0) {
-      if (uptail > tail && downtail > tail) {
-        return m_READS.StarBTT;
-      } else if (uptail > tail) {
-        return m_READS.StarBU;
-      } else if (downtail > tail) {
-        return m_READS.StarBD;
-      } else {
-        return m_READS.StarB;
-      }
-    }
-    return null;
+    return m_READS.Star;
   }
 
   private enum m_READS {
@@ -250,14 +229,7 @@ public class CandleStick {
     ShortWD,
     ShortBU,
     ShortBD,
-    StarW,
-    StarB,
-    StarWTT,
-    StarBTT,
-    StarWU,
-    StarWD,
-    StarBU,
-    StarBD,
+    Star,
     None;
 
     public static final int SIZE = m_READS.values().length;

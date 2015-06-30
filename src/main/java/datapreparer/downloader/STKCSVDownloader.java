@@ -56,7 +56,7 @@ public class STKCSVDownloader {
         if (!yhooParameter.equals("")) {
           //download data from yahoo
           URL url = new URL("http://ichart.finance.yahoo.com/table.csv?s="
-                  + code + "&a=" +  start_date.get(ChronoField.DAY_OF_MONTH)+ "&b=" +  start_date.get(ChronoField.MONTH_OF_YEAR)+ "&c=" + start_date.get(ChronoField.YEAR)
+                  + code + "&a=" + (start_date.get(ChronoField.MONTH_OF_YEAR)-1) + "&b=" + start_date.get(ChronoField.DAY_OF_MONTH) + "&c=" + start_date.get(ChronoField.YEAR)
                   + "&d=" + today.get(ChronoField.MONTH_OF_YEAR) + "&e=" + today.get(ChronoField.DAY_OF_MONTH) + "&f=" + today.get(ChronoField.YEAR)
                   + "&g=" + yhooParameter + "&ignore=.csv");
           System.out.println("Downloading data for " + code + " from " + url);

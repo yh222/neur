@@ -175,14 +175,17 @@ public class Predictor {
             m.find();
             result = (first + Double.parseDouble(m.group(0))) / 2;
           }
+          if (class_name.contains("Lowest")) {
+            result *= -1;
+          }
 
         } else {//If this is a numeric class
           writer.println(class_name + "," + roundDouble(result)
                   + "," + roundDouble(false_positive) + "," + roundDouble(false_random) + "," + identity);
         }
-        
-        double sig = GConfigs.getSignificanceNormal(this.m_TypePath,MyUtils.getDaysToAdvance(class_name));
-        if ((false_positive <= 0.4) && Math.abs(result) >=  sig) {
+
+        double sig = GConfigs.getSignificanceNormal(this.m_TypePath, MyUtils.getDaysToAdvance(class_name));
+        if ((false_positive <= 0.4) && Math.abs(result) >= sig) {
           if (!notables_local.containsKey(class_name)) {
             notables_local.put(class_name, new ArrayList());
           }
@@ -203,17 +206,17 @@ public class Predictor {
         for (Entry local_map : map.entrySet()) {
           ArrayList<Object[]> arr = (ArrayList) local_map.getValue();
           //if (arr.size() >= 3) {
-            if (!header) {
-              writer.println("------------------------");
-              writer.println(class_att_map.getKey());
-              header = true;
-            }
-            writer.println(local_map.getKey());
-            for (Object[] oray : arr) {
-              double[] evals = (double[]) oray[1];
-              writer.println(roundDouble((double) oray[2]) + "," + roundDouble(evals[1])
-                      + "," + roundDouble(evals[2]) + "," + oray[0]);
-            }
+          if (!header) {
+            writer.println("------------------------");
+            writer.println(class_att_map.getKey());
+            header = true;
+          }
+          writer.println(local_map.getKey());
+          for (Object[] oray : arr) {
+            double[] evals = (double[]) oray[1];
+            writer.println(roundDouble((double) oray[2]) + "," + roundDouble(evals[1])
+                    + "," + roundDouble(evals[2]) + "," + oray[0]);
+          }
           //}
           if (header) {
             writer.println("****************");

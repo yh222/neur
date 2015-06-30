@@ -47,7 +47,7 @@ public class STKTrainingValueMaker {
     addSupportResistance(date, rawDataMap, storageRow);
     addClusteredTrends(date, rawDataMap, storageRow);
     addVelocities(date, rawDataMap, storageRow);
-    //addCandleChartUnitCounts(date, rawDataMap, storageRow);
+    addCandleChartUnitCounts(date, rawDataMap, storageRow);
     //addCandlePattern(date, rawDataMap, storageRow);
     //addDividendData(date, storageRow);
     //addIndicieInfulences(date, storageRow);
