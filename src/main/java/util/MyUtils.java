@@ -42,8 +42,8 @@ public class MyUtils {
   }
 
   public static LocalDate getUsableDate(String date,
-          ConcurrentHashMap<String, Object[]> rawDataMap, int distance,
-          int duration, boolean isStart, boolean useEffevtiveDay) {
+          ConcurrentHashMap<String, Object[]> rawDataMap,
+          int distance, int duration, boolean isStart) {
     LocalDate tempdate = parseToISO(date);
     int direction;
     int count;
@@ -54,11 +54,15 @@ public class MyUtils {
       direction = duration - distance < 0 ? -1 : 1;
       count = Math.abs(duration - distance);
     }
-    int buffer = (int) ((duration + distance) * 0.6) + 5;
+
+    int buffer = (int) ((duration + distance) * 0.6) + 10;
+    tempdate = tempdate.plusDays(direction);
+    
     for (int i = 0; i <= count; i++) {
-      if (buffer <= 0) {
+      if (buffer < 0) {
         break;
       }
+      tempdate = tempdate.plusDays(direction);
       if (i == count) {
         if (rawDataMap.get(tempdate.toString()) == null) {
           buffer--;
@@ -67,14 +71,8 @@ public class MyUtils {
           return tempdate;
         }
       }
-      if (useEffevtiveDay) {
-        if (rawDataMap.get(tempdate.toString()) == null) {
-          buffer--;
-          i--;
-        }
-      }
-      tempdate = tempdate.plusDays(direction);
     }
+
     return null;
   }
 

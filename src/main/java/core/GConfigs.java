@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import util.AccessDB;
 
 /**
  * global configuration class
@@ -19,6 +20,7 @@ public class GConfigs {
 
   //Default start date for data download
   public static final String DEFAULT_START_DATE = "2013-01-01";
+  public static final String END_DATE = "2015-05-19";
 
   // Global Value:  project path
   public static final String DEFAULT_PATH = "D:\\Documents\\ProjectSPAData\\";
@@ -27,8 +29,7 @@ public class GConfigs {
   public static final String TEMP_PATH = DEFAULT_PATH + "temp\\";
   public static final String REPORT_PATH = DEFAULT_PATH + "reports\\";
 
-  public static final ArrayList<String> INSTRUMENT_CODES = 
-          loadInstrumentCodes(DEFAULT_PATH + "resources\\STK\\instrument_list.txt", 0);
+  public static final ArrayList<String> INSTRUMENT_CODES = AccessDB.loadSTKCodes();
   public static final ArrayList<String> INDICE_CODES = 
           loadInstrumentCodes(DEFAULT_PATH + "resources\\STK\\indice_list.txt", 0);
   public static final ArrayList<String> FX_CODES = 
@@ -38,7 +39,7 @@ public class GConfigs {
   //  public static ConcurrentHashMap<String, String> WIKI_TITTLES;
   public static final String IXIC = "^IXIC";
   //public static final String GSPC = "^GSPC";
-  public static final int[] WEEK_MULTIPIER_TRAIN = new int[]{2, 4, 10};
+  public static final int[] WEEK_MULTIPIER_TRAIN = new int[]{2, 5};
   public static final int[] WEEK_MULTIPIER_CLASS = new int[]{1, 2, 3, 4, 5};
 
   //Marker for numeric class attributes

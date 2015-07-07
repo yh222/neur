@@ -73,6 +73,7 @@ public class TrainingFileGenerator {
       //Get raw data organized by date for each instrument
       ConcurrentHashMap<String, Object[]> raw_data_map = RawDataLoader.loadRawData(m_Code, m_TypePath);
       STKTrainingValueMaker tvmaker = new STKTrainingValueMaker(m_Code);
+      STKClassValueMaker cvmaker = new STKClassValueMaker();
       ArrayList<LinkedHashMap<String, Object>> training_data = new ArrayList(600);
       //Start data processing
       for (String date : raw_data_map.keySet()) {
@@ -86,7 +87,7 @@ public class TrainingFileGenerator {
         }
         //Null values are allowed for class attributes, and will be recognized as 
         // missing
-        STKClassValueMaker.generateCalssValues(m_Code, date, raw_data_map, storageRow);
+        cvmaker.generateCalssValues(m_Code, date, raw_data_map, storageRow);
         training_data.add(storageRow);
       }
       //Sort according to date, ascending
@@ -99,7 +100,7 @@ public class TrainingFileGenerator {
 
     public void writeFullTrainingFile(String code, ArrayList<LinkedHashMap<String, Object>> training_data, boolean createHeaders) {
       File training_file = new File(m_LocalPath + code + "//" + code + "_Training.csv");
-      
+
       try (PrintWriter writer = new PrintWriter(new BufferedWriter(
               new FileWriter(training_file, false)))) {
         String temp = "";
@@ -128,14 +129,13 @@ public class TrainingFileGenerator {
       } catch (IOException ex) {
         Logger.getLogger(TrainingFileGenerator.class.getName()).log(Level.SEVERE, "Failed to write to training file for: " + code, ex);
       }
-      
+
     }
 
     // The evaluation file is used for manual evaluation, can be disabled if not in use.
     private void writeWekaEvaluationFile(String code, ArrayList<LinkedHashMap<String, Object>> training_data, boolean createHeaders) {
-      weka.filters.unsupervised.attribute.Discretize disc=new weka.filters.unsupervised.attribute.Discretize();
-      
-      
+      weka.filters.unsupervised.attribute.Discretize disc = new weka.filters.unsupervised.attribute.Discretize();
+
       try {
         File weka_training_file = new File(m_LocalPath + code + "//" + code + "_WekaTraining.csv");
         File weka_testing_file = new File(m_LocalPath + code + "//" + code + "_WekaTesting.csv");

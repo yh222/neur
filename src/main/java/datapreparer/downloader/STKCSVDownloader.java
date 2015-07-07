@@ -31,7 +31,12 @@ public class STKCSVDownloader {
     }
 
     ArrayList<String> instruments = codeList;
-    final LocalDate today = LocalDate.now();
+    LocalDate today = LocalDate.now();
+    if (GConfigs.END_DATE != null) {
+      today = LocalDate.parse(GConfigs.END_DATE);
+      today = today.minusMonths(1);
+    }
+
     for (String code : instruments) {
       String file_path = RESOURCE_PATH + GConfigs.MODEL_TYPES.STK.name() + "//" + code + "//" + code + type + ".csv";
       LocalDate start_date = LocalDate.now();
@@ -56,7 +61,7 @@ public class STKCSVDownloader {
         if (!yhooParameter.equals("")) {
           //download data from yahoo
           URL url = new URL("http://ichart.finance.yahoo.com/table.csv?s="
-                  + code + "&a=" + (start_date.get(ChronoField.MONTH_OF_YEAR)-1) + "&b=" + start_date.get(ChronoField.DAY_OF_MONTH) + "&c=" + start_date.get(ChronoField.YEAR)
+                  + code + "&a=" + (start_date.get(ChronoField.MONTH_OF_YEAR) - 1) + "&b=" + start_date.get(ChronoField.DAY_OF_MONTH) + "&c=" + start_date.get(ChronoField.YEAR)
                   + "&d=" + today.get(ChronoField.MONTH_OF_YEAR) + "&e=" + today.get(ChronoField.DAY_OF_MONTH) + "&f=" + today.get(ChronoField.YEAR)
                   + "&g=" + yhooParameter + "&ignore=.csv");
           System.out.println("Downloading data for " + code + " from " + url);
@@ -135,9 +140,9 @@ public class STKCSVDownloader {
 
   public static void main(String[] args) {
     STKCSVDownloader.updateRawDataFromYahoo("d", GConfigs.INSTRUMENT_CODES);
-    STKCSVDownloader.updateRawDataFromYahoo("d", GConfigs.INDICE_CODES);
+    //STKCSVDownloader.updateRawDataFromYahoo("d", GConfigs.INDICE_CODES);
     //Update dividend data
-    STKCSVDownloader.updateRawDataFromYahoo("v", GConfigs.INSTRUMENT_CODES);
+    //STKCSVDownloader.updateRawDataFromYahoo("v", GConfigs.INSTRUMENT_CODES);
   }
 
 }

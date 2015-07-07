@@ -28,7 +28,7 @@ public class RelativeStrengthIndex {
 
     if (distance != 0) {
       LocalDate adjusted_date = MyUtils.getUsableDate(date,
-              rawDataMap, distance, 0, true, false);
+              rawDataMap, distance, 0, true);
       if (adjusted_date == null) {
         return null;
       }

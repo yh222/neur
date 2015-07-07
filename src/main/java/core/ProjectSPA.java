@@ -16,6 +16,7 @@ public class ProjectSPA {
 
     ArrayList<String> classifierNames = new ArrayList();
     ArrayList<String[]> optionsList = new ArrayList();
+    ArrayList<String> notes = new ArrayList();
 
     ArrayList<String> seriesClassifierNames = new ArrayList();
     ArrayList<String[]> SeriesOptionsList = new ArrayList();
@@ -63,31 +64,24 @@ public class ProjectSPA {
 //
 //    classifierNames.add("weka.classifiers.functions.MLPClassifier");
 //    optionsList.add(new String[]{"-N", "2", "-R", "0.01", "-O", "1.0E-6", "-P", "1", "-E", "1", "-S", "1"});
-    for (int i = 0; i < 2; i++) {
-      classifierNames.add("weka.classifiers.functions.ArtmapNew");
-      optionsList.add(new String[]{});
-      classifierNames.add("weka.classifiers.functions.RBFClassifier");
-      optionsList.add(new String[]{"-N", "2", "-R", "0.01", "-L", "1.0E-6", "-C", "2"});
-      classifierNames.add("weka.classifiers.functions.MLPClassifier");
-      optionsList.add(new String[]{"-N", "2", "-R", "0.01", "-O", "1.0E-6"});
-      classifierNames.add("weka.classifiers.rules.JRip");
-      optionsList.add(new String[]{"-F", "4", "-N", "2", "-O", "2"});
-      classifierNames.add("weka.classifiers.trees.J48");
-      optionsList.add(new String[]{"-C", "0.15", "-M", "2"});
-      classifierNames.add("weka.classifiers.meta.RotationForest");
-      optionsList.add(new String[]{"-G", "4", "-H", "3", "-P", "50", "-F", "weka.filters.unsupervised.attribute.PrincipalComponents -R 1.0 -A 5 -M -1", "-S", "1", "-I", "10", "-W", "weka.classifiers.trees.J48", "--", "-C", "0.25", "-M", "2"});
-      classifierNames.add("weka.classifiers.rules.PART");
-      optionsList.add(new String[]{"-M", "3", "-C", "0.25"});
-      classifierNames.add("weka.classifiers.misc.VFI");
-      optionsList.add(new String[]{"-B", "0.8"});
-      classifierNames.add("weka.classifiers.functions.MultilayerPerceptronCS");
-      optionsList.add(new String[]{"-H", "a", "-N", "200", "-L", "0.01", "-M", "0.01"});
+    for (int i = 0; i < 3; i++) {
+//      classifierNames.add("weka.classifiers.meta.RotationForest");
+//      optionsList.add(new String[]{"-G", "4", "-H", "3", "-P", "50", "-F", "weka.filters.unsupervised.attribute.PrincipalComponents -R 1.0 -A 5 -M -1", "-W", "weka.classifiers.rules.NNge", "--", "-G", "30", "-I", "5"});
+//      notes.add("");
+
+      classifierNames.add("weka.classifiers.meta.AdditiveRegression");
+      optionsList.add(new String[]{"-S", "1.0", "-I", "10", "-W",
+        "weka.classifiers.trees.RandomForest", "--", "-I", "100",
+        "-depth", "10"});
+      notes.add("");
+
       classifierNames.add("weka.classifiers.trees.RandomForest");
-      optionsList.add(new String[]{"-I", "50"});
-      classifierNames.add("weka.classifiers.rules.NNge");
-      optionsList.add(new String[]{"-G", "30", "-I", "5"});
-      classifierNames.add("weka.classifiers.trees.HoeffdingTree");
-      optionsList.add(new String[]{"-L", "2", "-E", "0.000001", "-H", "0.5", "-M", "0.01", "-G", "200", "-N", "0.0"});
+      optionsList.add(new String[]{"-I", "100", "-depth", "10"});
+      notes.add("");
+//      classifierNames.add("weka.classifiers.rules.NNge");
+//      optionsList.add(new String[]{"-G", "10", "-I", "5"});
+//      notes.add("");
+
     }
 
 //      classifierNames.add("weka.classifiers.functions.ArtmapNew");
@@ -114,7 +108,7 @@ public class ProjectSPA {
 //      optionsList.add(new String[]{"-G", "30", "-I", "5"});
 //      classifierNames.add("weka.classifiers.trees.HoeffdingTree");
 //      optionsList.add(new String[]{"-L", "2", "-E", "0.000001", "-H", "0.5", "-M", "0.01", "-G", "200", "-N", "0.0"});
-    ExecutorService executor = Executors.newFixedThreadPool(6);
+    ExecutorService executor = Executors.newFixedThreadPool(8);
 
     ArrayList<String> instruments = GConfigs.INSTRUMENT_CODES;
     WekaModelBenchamrker benchmarker = new WekaModelBenchamrker(MODEL_TYPES.STK.name());
@@ -122,13 +116,26 @@ public class ProjectSPA {
     for (String i : instruments) {
       Runnable worker = new ClassicifyThread(i,
               classifierNames,
-              optionsList, benchmarker);
+              optionsList, notes, benchmarker);
       executor.execute(worker);
     }
     executor.shutdown();
     while (!executor.isTerminated()) {
     }
 
+    //Do again
+//    executor = Executors.newFixedThreadPool(6);
+//    benchmarker = new WekaModelBenchamrker(MODEL_TYPES.STK.name());
+//    MyUtils.deleteModelFolder(MODEL_TYPES.STK.name());
+//    for (String i : instruments) {
+//      Runnable worker = new ClassicifyThread(i,
+//              classifierNames,
+//              optionsList, notes, benchmarker);
+//      executor.execute(worker);
+//    }
+//    executor.shutdown();
+//    while (!executor.isTerminated()) {
+//    }
   }
 
 //  private static ArrayList<String[]> cloneList(ArrayList<String[]> list) {
@@ -143,13 +150,16 @@ public class ProjectSPA {
     String m_Code;
     ArrayList<String> m_cNames;
     ArrayList<String[]> m_cOptions;
+    ArrayList<String> m_cNodes;
     WekaModelBenchamrker m_Benchmarker;
 
     public ClassicifyThread(String i, ArrayList<String> classifierNames,
-            ArrayList<String[]> optionsList, WekaModelBenchamrker benchmarker) {
+            ArrayList<String[]> optionsList, ArrayList<String> notes,
+            WekaModelBenchamrker benchmarker) {
       m_Code = i;
       m_cNames = classifierNames;
       m_cOptions = optionsList;
+      m_cNodes = notes;
       m_Benchmarker = benchmarker;
     }
 
@@ -157,7 +167,7 @@ public class ProjectSPA {
     public void run() {
       try {
         m_Benchmarker.benchmarkByClasses(m_Code,
-                m_cNames, m_cOptions);
+                m_cNames, m_cOptions, m_cNodes);
       } catch (IOException ex) {
         Logger.getLogger(ProjectSPA.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
       }

@@ -28,8 +28,8 @@ public class LWR {
 
     SMovingAverage ma = new SMovingAverage(maDuration);
     // Multipy maDuration to get better ma result
-    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, distance, maDuration, true, true);
-    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, distance, maDuration, false, true);
+    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, distance, maDuration, true);
+    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, distance, maDuration, false);
     if (start_date == null || end_date == null) {
       return null;
     }

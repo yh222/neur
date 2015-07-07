@@ -48,6 +48,20 @@ public class PriceMovingAverage {
     return ema.get(date);
   }
 
+//  public Object getEMAClass(String date, int distance, int emaDuration,
+//          ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException {
+//    LocalDate target_date = MyUtils.getUsableDate(date, rawDataMap, distance * -1, 1, true);
+//    if (target_date == null) {
+//      return "?";
+//    }
+//    Double base_ema = getRawEMA(date, emaDuration, rawDataMap);
+//    Double target_ema = getRawEMA(target_date.toString(), emaDuration, rawDataMap);
+//    if (base_ema == null || target_ema == null) {
+//      return "?";
+//    }
+//    return (target_ema - base_ema) / base_ema;
+//  }
+
   public Object getSMA(String date, int smaDuration,
           ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException {
 
@@ -81,8 +95,7 @@ public class PriceMovingAverage {
   // Standard deviation, the bone of bollinger channel
   public Double getSTD(String date, int distance, int stdDuration,
           ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException {
-    LocalDate start_date = MyUtils.getUsableDate(
-            date, rawDataMap, distance, stdDuration, false, true);
+    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, distance, stdDuration, false);
     if (start_date == null) {
       return null;
     }
@@ -113,8 +126,8 @@ public class PriceMovingAverage {
 
   public Double getDEA(String date, int shortD, int longD, int midD,
           ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException {
-    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, midD, midD, true, true);
-    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, midD, midD, false, true);
+    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, midD, midD, true);
+    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, midD, midD, false);
     if (start_date == null || end_date == null) {
       return null;
     }
@@ -126,7 +139,7 @@ public class PriceMovingAverage {
       if (dif != null) {
         v = (double) ema.average(dif);
       }
-     start_date= start_date.plusDays(1);
+      start_date = start_date.plusDays(1);
     }
     return v;
   }
@@ -164,7 +177,7 @@ public class PriceMovingAverage {
         buffer = 15;
         ema.put(datestr, (double) ma.average((double) raw_data[YAHOO_DATA_INDEX.CLOSE.ordinal()]));
       }
-      start_date=start_date.plusDays(1);
+      start_date = start_date.plusDays(1);
     }
   }
 
@@ -206,7 +219,7 @@ public class PriceMovingAverage {
         std.put(datestr, (double) deviation.evaluate(fqueue));
         sma.put(datestr, (double) ma.getAvg());
       }
-     start_date= start_date.plusDays(1);
+      start_date = start_date.plusDays(1);
     }
   }
 

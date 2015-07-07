@@ -20,7 +20,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import util.MyUtils;
 import static util.MyUtils.roundDouble;
+import weka.attributeSelection.ASEvaluation;
 import weka.attributeSelection.AttributeSelection;
+import weka.attributeSelection.CorrelationAttributeEval;
 import weka.attributeSelection.Ranker;
 import weka.attributeSelection.ReliefFAttributeEval;
 import weka.classifiers.AbstractClassifier;
@@ -39,33 +41,40 @@ public class WekaModelBenchamrker {
   private final int m_DaysForEval = 60;
 
   // Classifier Name -> ArrayList<[fp,fr,mae]>
-  private final ConcurrentHashMap<String, ConcurrentHashMap> evals = new ConcurrentHashMap();
+  private final ConcurrentHashMap<String, ConcurrentHashMap> m_Evals = new ConcurrentHashMap();
 
   public WekaModelBenchamrker(String modelType) {
     m_TypePath = modelType + "//";
   }
 
-  public void benchmarkByClasses(String code,
-          ArrayList<String> classifierNames,
-          ArrayList<String[]> optionsList) throws IOException {
+  public void benchmarkByClasses(String code, ArrayList<String> classifierNames, ArrayList<String[]> optionsList, ArrayList<String> notes) throws IOException {
 
     Instances raw_data = MyUtils.loadInstancesFromCSV(GConfigs.RESOURCE_PATH
             + this.m_TypePath + code + "//" + code + "_Training.csv");
+    //Delete date
+    raw_data.deleteAttributeAt(0);
 
-    evals.put(code, new ConcurrentHashMap());
+    m_Evals.put(code, new ConcurrentHashMap());
     //raw_data=weightDataByDate(raw_data);
     for (int i = 0; i < GConfigs.getClassCount(m_TypePath); i++) {
       try {
         Instances data_with_one_class
                 = removeUnwantedClassAtt(new Instances(raw_data), i);
         //data_with_one_class=interquartileRange(data_with_one_class);
-        benchMarkModels("Primary",
-                selectAttributes(new Instances(data_with_one_class)),
-                code, classifierNames, optionsList, i);
+        ReliefFAttributeEval relf = new ReliefFAttributeEval();
+        relf.setOptions(new String[]{"-M", "50"});
+        benchMarkModels("Relf",
+                selectAttributes(new Instances(data_with_one_class), relf),
+                code, classifierNames, optionsList, notes, i);
 
-        benchMarkModels("Secondary",
+        CorrelationAttributeEval corrlat = new CorrelationAttributeEval();
+        benchMarkModels("Corrlat",
+                selectAttributes(new Instances(data_with_one_class), corrlat),
+                code, classifierNames, optionsList, notes, i);
+
+        benchMarkModels("Relf-Sec",
                 selectUnfavoredAttributes(code + "_" + i, new Instances(data_with_one_class)),
-                code, classifierNames, optionsList, i);
+                code, classifierNames, optionsList, notes, i);
 
       } catch (Exception ex) {
         Logger.getLogger(WekaModelBenchamrker.class.getName()).
@@ -79,7 +88,8 @@ public class WekaModelBenchamrker {
   public HashMap<Evaluation, double[]>
           benchMarkModels(String additionInfo, Instances trainingData,
                   String code, ArrayList<String> classifierNames,
-                  ArrayList<String[]> optionsList, int classIndex) throws Exception {
+                  ArrayList<String[]> optionsList, ArrayList<String> notes,
+                  int classIndex) throws Exception {
     HashMap<Evaluation, double[]> modelBenchMap = new HashMap();
     String class_name = trainingData.classAttribute().name();
     //Find the days range in the class attribute
@@ -93,16 +103,18 @@ public class WekaModelBenchamrker {
       // Create classifier by name and options
       Classifier classifier = AbstractClassifier
               .forName(classifierNames.get(i), optionsList.get(i).clone());
-      String identity = classifierNames.get(i).split("\\.")[3]
+      String identity = notes.get(i) + classifierNames.get(i).split("\\.")[3]
               + "-" + class_name + "-" + additionInfo;
       String cname = classifierNames.get(i);
-      String classifier_name = cname.substring(cname.lastIndexOf(".") + 1, cname.length()) + "-" + additionInfo;
+      String classifier_name = notes.get(i)
+              + cname.substring(cname.lastIndexOf(".") + 1, cname.length())
+              + "-" + additionInfo;
       double[] eval_result;
 
       //If the class attribute is numeric but the classifier is unable to handle numeric class
       // discretize the class attribute
       if (!classifier.getCapabilities().handles(Capabilities.Capability.NUMERIC_CLASS)) {
-        instances = discretizeInstances(instances);
+        instances = discretizeClassAtt(instances);
       }
 //      else if (classifier_name.contains("MultilayerPerceptron")
 //              || classifier_name.contains("RandomForest")
@@ -117,13 +129,13 @@ public class WekaModelBenchamrker {
 //      System.out.println("False positive:" + eval_result[1]);
 //      System.out.println("Random rate:" + eval_result[2]);
 
-      if (eval_result[1] - eval_result[2] >= 0.05 && eval_result[1] > 0) {
+      if (eval_result[1] - eval_result[2] >= 0.15 && eval_result[1] > 0) {
         MyUtils.saveModelAndPerformance(code, identity, m_TypePath,
                 classifier, instances.stringFreeStructure(), eval_result);
       }
 
       // code -> classifier_name -> ArrayList<Entry<class_name,ArrayList<different_attempts>>>
-      ConcurrentHashMap<String, ArrayList> map = evals.get(code);
+      ConcurrentHashMap<String, ArrayList> map = m_Evals.get(code);
       if (!map.containsKey(classifier_name)) {
         map.put(classifier_name, new ArrayList());
       }
@@ -135,7 +147,7 @@ public class WekaModelBenchamrker {
         if (e.getKey().equals(class_name)) {
           found = true;
           ArrayList a = (ArrayList) e.getValue();
-          if (eval_result[1] != 0) {
+          if (eval_result[1] - eval_result[2] >= 0.15) {
             a.add(eval_result);
           }
         }
@@ -143,7 +155,7 @@ public class WekaModelBenchamrker {
       if (!found) {
         ArrayList a = new ArrayList();
         a.add(new double[5]);
-        if (eval_result[1] != 0) {
+        if (eval_result[1] - eval_result[2] >= 0.15) {
           a.add(eval_result);
         }
         list.add(new AbstractMap.SimpleEntry(class_name, a));
@@ -192,13 +204,15 @@ public class WekaModelBenchamrker {
     return trainInstances;
   }
 
-  private Instances selectAttributes(Instances originalData) throws Exception {
+  private Instances selectAttributes(Instances originalData, ASEvaluation evaluator) throws Exception {
+    if (!evaluator.getCapabilities().handles(Capabilities.Capability.NUMERIC_CLASS)) {
+      originalData = discretizeClassAtt(originalData);
+    }
+
     AttributeSelection selection = new AttributeSelection();
     Ranker ranker = new Ranker();
     ranker.setOptions(new String[]{"-N", "20"});
-    ReliefFAttributeEval eval = new ReliefFAttributeEval();
-    eval.setOptions(new String[]{"-M", "50"});
-    selection.setEvaluator(eval);
+    selection.setEvaluator(evaluator);
     selection.setSearch(ranker);
     selection.SelectAttributes(originalData);
     return selection.reduceDimensionality(originalData);
@@ -244,10 +258,19 @@ public class WekaModelBenchamrker {
     return data;
   }
 
-  private Instances discretizeInstances(Instances instances) throws Exception {
+  private Instances discretizeClassAtt(Instances instances) throws Exception {
     weka.filters.unsupervised.attribute.Discretize disc = new weka.filters.unsupervised.attribute.Discretize();
     disc.setAttributeIndices("last");
     disc.setIgnoreClass(true);
+    disc.setUseEqualFrequency(true);
+    disc.setInputFormat(instances);
+    return Filter.useFilter(instances, disc);
+  }
+
+  private Instances discretizeTrainingAtt(Instances instances) throws Exception {
+    weka.filters.unsupervised.attribute.Discretize disc = new weka.filters.unsupervised.attribute.Discretize();
+    disc.setAttributeIndices("first-last");
+    disc.setIgnoreClass(false);
     disc.setUseEqualFrequency(true);
     disc.setInputFormat(instances);
     return Filter.useFilter(instances, disc);
@@ -276,23 +299,28 @@ public class WekaModelBenchamrker {
     double[] errors = new double[m_DaysForEval];
     double threshold = determineEvaluationThreshold(originalData, daysToAdvance);
     Attribute class_att = originalData.classAttribute();
-    double half_att_amount = class_att.numValues() / 2;
     //double sig = GConfigs.getSignificanceNormal(m_TypePath);
+    Classifier tclassifier = AbstractClassifier.makeCopy(classifier);
 
+    int buffer = 0;
     for (int i = 0; i < daysToAdvance; i++) {
       local_data.remove(size - i);
     }
     size -= daysToAdvance;
 
-    for (int i = 0, c = 0; i < m_DaysForEval; i++, c++) {
-      local_data.remove(size - c);
-
-      //Draw 16% of the total data
-      if (ThreadLocalRandom.current().nextInt(6) != 0) {
-        i--;
-      } else {
-        Classifier tclassifier = AbstractClassifier.makeCopy(classifier);
-        tclassifier.buildClassifier(local_data);
+    //c=number of days visited, i=number of days evaluated
+    for (int i = 0, c = 0; i < m_DaysForEval; c++) {
+      //Draw 25% of the total data
+      if (ThreadLocalRandom.current().nextInt(4) == 0) {
+        if (buffer == 0) {
+          for (int j = 0; j < 20; j++) {
+            local_data.remove(local_data.size() - 1);
+          }
+          tclassifier.buildClassifier(local_data);
+          buffer = 4;
+        } else {
+          buffer--;
+        }
         double fr = (double) tclassifier.classifyInstance(originalData.get(size + daysToAdvance - c));
         double av = (double) originalData.get(size + daysToAdvance - c).classValue();
 
@@ -301,13 +329,13 @@ public class WekaModelBenchamrker {
           if (class_att.isNumeric()) {
             if (fr >= 0.005) {
               positive_count++;
-              if (av > 0.005) {
+              if (av >= 0.005) {
                 true_positive++;
               }
             }
             if (ThreadLocalRandom.current().nextBoolean()) {
               random_count++;
-              if (av > 0.005) {
+              if (av >= 0.005) {
                 random_true++;
               }
             }
@@ -320,7 +348,7 @@ public class WekaModelBenchamrker {
               }
             }
 
-            int ran = ThreadLocalRandom.current().nextInt(1);
+            int ran = ThreadLocalRandom.current().nextInt(2);
             if (ran != 0) {
               random_count++;
               if (av == ran) {
@@ -334,55 +362,25 @@ public class WekaModelBenchamrker {
             // If |av|<|t| && |fr|>|t|
             if (Math.abs(fr) >= Math.abs(threshold)) {
               positive_count++;
-              if (class_att.name().contains("Highest") && av >= threshold) {
-                true_positive++;
-              } else if (class_att.name().contains("Lowest") && av <= threshold) {
+              if (Math.abs(av) >= threshold) {
                 true_positive++;
               }
             }
             // Count for random rate, 50% change for random to be greater than threshold
             if (ThreadLocalRandom.current().nextBoolean()) {
               random_count++;
-              if (class_att.name().contains("Highest") && av >= threshold) {
-                random_true++;
-              } else if (class_att.name().contains("Lowest") && av <= threshold) {
+              if (Math.abs(fr) >= threshold) {
                 random_true++;
               }
             }
 
-          } else if (class_att.name().contains("Lowest")) { //predicting negative
-            if (fr <= threshold) {
-              positive_count++;
-              if (av <= threshold) {
-                true_positive++;
-              }
-            }
-            // Count for random rate, 50% change for fr to be greater than threshold
-            if (ThreadLocalRandom.current().nextBoolean()) {
-              random_count++;
-              if (av <= threshold) {
-                random_true++;
-              }
-            }
-          } else if (class_att.name().contains("Highest")) { //predicting positive
-            if (fr >= threshold) {
-              positive_count++;
-              if (av >= threshold) {
-                true_positive++;
-              }
-            }
-            // Count for random rate, 50% change for fr to be greater than threshold
-            if (ThreadLocalRandom.current().nextBoolean()) {
-              random_count++;
-              if (av >= threshold) {
-                random_true++;
-              }
-            }
           } else {
+
             break;
           }
         }
         errors[i] = Math.abs(av) - Math.abs(fr);
+        i++;
         //System.out.println("fr=" + fr + ", av=" + av);
       }
     }
@@ -412,7 +410,8 @@ public class WekaModelBenchamrker {
   }
 
   private double[] evaluateForecaster(Classifier classifier,
-          String class_name, Instances originalData, int daysToAdvance) throws Exception {
+          String class_name, Instances originalData, int daysToAdvance) 
+          throws Exception {
     int size = originalData.size() - 1;
     double false_positive = 0;
     double positive_count = 0;
@@ -437,7 +436,8 @@ public class WekaModelBenchamrker {
       fc.primeForecaster(local_data);
 
       if (size + daysToAdvance - i <= size) {
-        double fr = (double) (fc.forecast(daysToAdvance).get(daysToAdvance - 1).get(0).predicted());
+        double fr = (double) (fc.forecast(daysToAdvance)
+                .get(daysToAdvance - 1).get(0).predicted());
         double av = (double) originalData.get(size + daysToAdvance - i).classValue();
         // If |av|<|t| && |fr|>|t|
         if (Math.abs(fr) > Math.abs(threshold)) {
@@ -503,7 +503,8 @@ public class WekaModelBenchamrker {
         if (tmpstr.contains("-inf-0.005") || tmpstr.contains("-0.005-inf")
                 || tmpstr.contains("-0.005-0.005")) {
           if (class_att.name().contains("Highest")) {
-            return Math.min(class_att.indexOfValue(tmpstr) + multi, class_att.numValues() - 1);
+            return Math.min(class_att.indexOfValue(tmpstr) + multi,
+                    class_att.numValues() - 1);
           } else {
             return Math.max(0, class_att.indexOfValue(tmpstr) - multi);
           }
@@ -511,11 +512,7 @@ public class WekaModelBenchamrker {
       }
     }
     //if numeric 
-    if (class_att.name().contains("Highest")) {
-      return sig;
-    } else {
-      return sig * -1;
-    }
+    return sig;
   }
 
   private void printSelectedAtts(String tittle, int[] selected, Instances header) {
@@ -536,7 +533,7 @@ public class WekaModelBenchamrker {
   private void writeToFile(String code) {
     File file = new File(GConfigs.REPORT_PATH + "out\\6_" + code + ".csv");
 
-    ConcurrentHashMap<String, ArrayList> map = evals.get(code);
+    ConcurrentHashMap<String, ArrayList> map = m_Evals.get(code);
 
     try (PrintWriter writer = new PrintWriter(new BufferedWriter(
             new FileWriter(file, true)))) {

@@ -11,8 +11,8 @@ public class Extreme {
 
   public static Object getExtreme(String date, ConcurrentHashMap<String, Object[]> rawDataMap,
           int distance, int duration, boolean getHighest) {
-    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, true, true);
-    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, false, true);
+    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, true);
+    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, false);
     if (start_date == null || end_date == null) {
       return null;
     }
@@ -42,7 +42,7 @@ public class Extreme {
 
   public static Object getExtremeRatio(String date,
           ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration, boolean getHighest) {
-    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, true, true);
+    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, true);
     if (start_date == null) {
       return null;
     }
@@ -70,6 +70,7 @@ public class Extreme {
     //positive or negative
     boolean sign = v >= 0;
     int i = (int) Math.ceil(Math.abs(v) / sig) - 1;
+    
     //i=Math.round(i);
     if (sign) {
       return i*sig;

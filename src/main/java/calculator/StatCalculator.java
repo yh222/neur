@@ -20,8 +20,8 @@ public class StatCalculator {
    */
   public static Object getVelocity(String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance) {
     //Duration should be always zero, as non-directly past velocity seems not revelant.
-    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, distance, 0, true, true);
-    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, 0, 0, false, true);
+    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, distance, 0, true);
+    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, 0, 0, false);
     if (start_date == null || end_date == null) {
       return null; //remain 0
     }
@@ -45,8 +45,8 @@ public class StatCalculator {
   public static Object getMomentum(String date,
           ConcurrentHashMap<String, Object[]> rawDataMap,
           int distance, int duration) {
-    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, true, true);
-    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, false, true);
+    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, true);
+    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, false);
     if (start_date == null || end_date == null) {
       return null;
     }
@@ -57,8 +57,8 @@ public class StatCalculator {
   }
 
   public static Object getClusteredTrend(String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration, boolean getHighest) {
-    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, true, true);
-    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, false, true);
+    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, true);
+    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, false);
     if (start_date == null || end_date == null) {
       return null;
     }
@@ -206,10 +206,10 @@ public class StatCalculator {
   public static Object getHistoryAvgDiff(String date,
           ConcurrentHashMap<String, Object[]> rawDataMap,
           int distance, int duration) {
-    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, true, true);
-    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, false, true);
+    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, true);
+    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, false);
 
-    LocalDate input_date = MyUtils.getUsableDate(date, rawDataMap, 0, 0, false, true);
+    LocalDate input_date = MyUtils.getUsableDate(date, rawDataMap, 0, 0, false);
 
     if (start_date == null || end_date == null || input_date == null) {
       return "?";

@@ -1,28 +1,34 @@
 package datapreparer.valuemaker;
 
 import calculator.Extreme;
+import calculator.PriceMovingAverage;
 import calculator.Signal;
+import calculator.StableTrend;
 import static core.GConfigs.WEEK_MULTIPIER_CLASS;
 import calculator.StatCalculator;
 import core.GConfigs;
 import core.GConfigs.MODEL_TYPES;
+import java.text.ParseException;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class STKClassValueMaker {
 
-  private final static int DaysInWeek = 5;
+  PriceMovingAverage m_MovingAverage = new PriceMovingAverage();
 
-  public static void generateCalssValues(String code, String date,
+  public void generateCalssValues(String code, String date,
           ConcurrentHashMap<String, Object[]> rawDataMap,
           HashMap<String, Object> storageRow) {
-    addExtremeClass(code, date, rawDataMap, storageRow);
+    //addExtremeClass(code, date, rawDataMap, storageRow);
     //addExtremeValues(date, rawDataMap, storageRow);
+    addStableTrends(date, rawDataMap, storageRow);
     addSignals(date, rawDataMap, storageRow);
     //addClusteredTrends(code, date, rawDataMap, storageRow);
   }
 
-  private static void addExtremeClass(String code, String date,
+  private void addExtremeClass(String code, String date,
           ConcurrentHashMap<String, Object[]> rawDataMap,
           HashMap<String, Object> storageRow) {
     int days;
@@ -41,43 +47,43 @@ public class STKClassValueMaker {
 //    storageRow.put(GConfigs.CLS + "Lowest15d",
 //            Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
 //                    rawDataMap, 0, 15, false));
-    
-    for (int i = 0; i < WEEK_MULTIPIER_CLASS.length; i++) {
-      days = WEEK_MULTIPIER_CLASS[i] * DaysInWeek;
-      storageRow.put(GConfigs.CLS + "Highest" + String.format("%02d", days) + "d",
-              Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
-                      rawDataMap, 0, days, true));
-    }
-
-    for (int i = 0; i < WEEK_MULTIPIER_CLASS.length; i++) {
-      days = WEEK_MULTIPIER_CLASS[i] * DaysInWeek;
-      storageRow.put(GConfigs.CLS + "Lowest" + String.format("%02d", days) + "d",
-              Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
-                      rawDataMap, 0, days, false));
-    }
+//    for (int i = 0; i < WEEK_MULTIPIER_CLASS.length; i++) {
+//      days = WEEK_MULTIPIER_CLASS[i] * DaysInWeek;
+//      storageRow.put(GConfigs.CLS + "Highest" + String.format("%02d", days) + "d",
+//              Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
+//                      rawDataMap, 0, days, true));
+//    }
+//
+//    for (int i = 0; i < WEEK_MULTIPIER_CLASS.length; i++) {
+//      days = WEEK_MULTIPIER_CLASS[i] * DaysInWeek;
+//      storageRow.put(GConfigs.CLS + "Lowest" + String.format("%02d", days) + "d",
+//              Extreme.getNominalExtreme(MODEL_TYPES.STK, date,
+//                      rawDataMap, 0, days, false));
+//    }
   }
 
-  private static void addClusteredTrends(String code, String date,
+//  private static void addClusteredTrends(String code, String date,
+//          ConcurrentHashMap<String, Object[]> rawDataMap,
+//          HashMap<String, Object> storageRow) {
+//    int days;
+//    for (int i = 0; i < WEEK_MULTIPIER_CLASS.length; i++) {
+//      days = WEEK_MULTIPIER_CLASS[i] * DaysInWeek;
+//      storageRow.put(GConfigs.CLS + "CTrdHigh" + String.format("%02d", days) + "d",
+//              StatCalculator.getNominalCluTrend(MODEL_TYPES.STK, date,
+//                      rawDataMap, 0, days, true));
+//
+//    }
+//
+//    for (int i = 0; i < WEEK_MULTIPIER_CLASS.length; i++) {
+//      days = WEEK_MULTIPIER_CLASS[i] * DaysInWeek;
+//      storageRow.put(GConfigs.CLS + "CTrdLow" + String.format("%02d", days) + "d",
+//              StatCalculator.getNominalCluTrend(MODEL_TYPES.STK, date,
+//                      rawDataMap, 0, days, false));
+//    }
+//  }
+  private void addExtremeValues(String date,
           ConcurrentHashMap<String, Object[]> rawDataMap,
           HashMap<String, Object> storageRow) {
-    int days;
-    for (int i = 0; i < WEEK_MULTIPIER_CLASS.length; i++) {
-      days = WEEK_MULTIPIER_CLASS[i] * DaysInWeek;
-      storageRow.put(GConfigs.CLS + "CTrdHigh" + String.format("%02d", days) + "d",
-              StatCalculator.getNominalCluTrend(MODEL_TYPES.STK, date,
-                      rawDataMap, 0, days, true));
-
-    }
-
-    for (int i = 0; i < WEEK_MULTIPIER_CLASS.length; i++) {
-      days = WEEK_MULTIPIER_CLASS[i] * DaysInWeek;
-      storageRow.put(GConfigs.CLS + "CTrdLow" + String.format("%02d", days) + "d",
-              StatCalculator.getNominalCluTrend(MODEL_TYPES.STK, date,
-                      rawDataMap, 0, days, false));
-    }
-  }
-
-  private static void addExtremeValues(String date, ConcurrentHashMap<String, Object[]> rawDataMap, HashMap<String, Object> storageRow) {
     int days;
 
     //Debug
@@ -102,7 +108,17 @@ public class STKClassValueMaker {
 //    }
   }
 
-  private static void addSignals(String date, ConcurrentHashMap<String, Object[]> rawDataMap, HashMap<String, Object> storageRow) {
+  private void addStableTrends(String date,
+          ConcurrentHashMap<String, Object[]> rawDataMap,
+          HashMap<String, Object> storageRow) {
+    storageRow.put(GConfigs.CLS + "Stable5d",
+            StableTrend.getSTrendRatio(date, -6, 5, rawDataMap));
+
+  }
+
+  private void addSignals(String date,
+          ConcurrentHashMap<String, Object[]> rawDataMap,
+          HashMap<String, Object> storageRow) {
     storageRow.put(GConfigs.CLS + "UpSignal" + String.format("%02d", 10) + "d",
             Signal.getUpSignal(MODEL_TYPES.STK, date, rawDataMap, 10));
     storageRow.put(GConfigs.CLS + "DownSignal" + String.format("%02d", 10) + "d",

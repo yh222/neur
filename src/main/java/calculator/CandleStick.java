@@ -39,7 +39,7 @@ public class CandleStick {
     double tutail = tbody > 0 ? (thigh - tclose) : (thigh - topen);
     double tdtail = tbody > 0 ? (topen - tlow) : (tclose - tlow);
 
-    LocalDate yesterday = MyUtils.getUsableDate(date, rawDataMap, 1, 1, true, true);
+    LocalDate yesterday = MyUtils.getUsableDate(date, rawDataMap, 1, 1, true);
     raw_data = rawDataMap.get(yesterday.toString());
     if (raw_data == null) {
       return null;
@@ -149,8 +149,8 @@ public class CandleStick {
 
   public static void getCandleChartUnits(String date, ConcurrentHashMap<String, Object[]> rawDataMap, int distance, int duration, HashMap<String, Object> targetToInsert) {
     m_READS[] reads = m_READS.values();
-    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, true, true);
-    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, false, true);
+    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, true);
+    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, false);
     if (start_date == null || end_date == null) {
       for (int i = 0; i < m_READS.SIZE; i++) {
         targetToInsert.put(reads[i].name() + duration + "d", null);

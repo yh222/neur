@@ -11,8 +11,8 @@ public class ADTM {
   public static Object getMAADTM(String date, int maDuration, int sumBackDuration,
           ConcurrentHashMap<String, Object[]> rawDataMap) throws ParseException {
     SMovingAverage ma = new SMovingAverage(maDuration);
-    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, maDuration, maDuration, true, true);
-    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, maDuration, maDuration, false, true);
+    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, maDuration, maDuration, true);
+    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, maDuration, maDuration, false);
     if (start_date == null || end_date == null) {
       return null;
     }
@@ -45,8 +45,8 @@ public class ADTM {
 
   public static double sumBack(String date, int distance, int duration,
           ConcurrentHashMap<String, Object[]> rawDataMap, Method m) throws ParseException {
-    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, true, true);
-    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, false, true);
+    LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, true);
+    LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, false);
     if (start_date == null || end_date == null) {
       return 0;
     }
@@ -78,7 +78,7 @@ public class ADTM {
       Object[] raw_data = rawDataMap.get(date);
       double open = (double) raw_data[YAHOO_DATA_INDEX.OPEN.ordinal()];
       double high = (double) raw_data[YAHOO_DATA_INDEX.HIGH.ordinal()];
-      LocalDate yesterday = MyUtils.getUsableDate(date, rawDataMap, 1, 1, true, true);
+      LocalDate yesterday = MyUtils.getUsableDate(date, rawDataMap, 1, 1, true);
       if (yesterday == null) {
         return 0;
       }
@@ -101,7 +101,7 @@ public class ADTM {
       Object[] raw_data = rawDataMap.get(date);
       double open = (double) raw_data[YAHOO_DATA_INDEX.OPEN.ordinal()];
       double low = (double) raw_data[YAHOO_DATA_INDEX.LOW.ordinal()];
-      LocalDate yesterday = MyUtils.getUsableDate(date, rawDataMap, 1, 1, true, true);
+      LocalDate yesterday = MyUtils.getUsableDate(date, rawDataMap, 1, 1, true);
       if (yesterday == null) {
         return 0;
       }

@@ -138,8 +138,8 @@ public class Predictor {
         String identity = p.getKey();
         double result;
         double[] evaluations = (double[]) p.getValue()[1];
-        double false_positive = evaluations[1];
-        double false_random = evaluations[2];
+        double true_positive = evaluations[1];
+        double true_random = evaluations[2];
         Instances train_header = (Instances) p.getValue()[2];
         Attribute class_attribute = train_header.classAttribute();
         String class_name = class_attribute.name();
@@ -163,7 +163,7 @@ public class Predictor {
 
         if (class_attribute.isNominal()) {//If this is a nominal class
           writer.println(class_name + "," + class_attribute.value((int) result)
-                  + "," + roundDouble(false_positive) + "," + roundDouble(false_random) + "," + identity.substring(0, identity.indexOf("-")));
+                  + "," + roundDouble(true_positive) + "," + roundDouble(true_random) + "," + identity.substring(0, identity.indexOf("-")));
           Scanner st = new Scanner(class_attribute.value((int) result));
           Pattern ptn = Pattern.compile("(\\d)+\\.(\\d)+");
           Matcher m = ptn.matcher(class_attribute.value((int) result));
@@ -181,11 +181,11 @@ public class Predictor {
 
         } else {//If this is a numeric class
           writer.println(class_name + "," + roundDouble(result)
-                  + "," + roundDouble(false_positive) + "," + roundDouble(false_random) + "," + identity);
+                  + "," + roundDouble(true_positive) + "," + roundDouble(true_random) + "," + identity);
         }
 
         double sig = GConfigs.getSignificanceNormal(this.m_TypePath, MyUtils.getDaysToAdvance(class_name));
-        if ((false_positive <= 0.4) && Math.abs(result) >= sig) {
+        if ((true_positive-true_random >=0.15) && Math.abs(result) >= sig) {
           if (!notables_local.containsKey(class_name)) {
             notables_local.put(class_name, new ArrayList());
           }
