@@ -32,7 +32,7 @@ public class STKCSVDownloader {
 
     ArrayList<String> instruments = codeList;
     LocalDate today = LocalDate.now();
-    if (GConfigs.END_DATE != null) {
+    if (GConfigs.END_DATE != "") {
       today = LocalDate.parse(GConfigs.END_DATE);
       today = today.minusMonths(1);
     }
@@ -140,7 +140,7 @@ public class STKCSVDownloader {
 
   public static void main(String[] args) {
     STKCSVDownloader.updateRawDataFromYahoo("d", GConfigs.INSTRUMENT_CODES);
-    //STKCSVDownloader.updateRawDataFromYahoo("d", GConfigs.INDICE_CODES);
+  //STKCSVDownloader.updateRawDataFromYahoo("d", GConfigs.INDICE_CODES);
     //Update dividend data
     //STKCSVDownloader.updateRawDataFromYahoo("v", GConfigs.INSTRUMENT_CODES);
   }

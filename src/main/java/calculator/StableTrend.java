@@ -11,18 +11,21 @@ public class StableTrend {
   //divided by a target date B's past x day's average close
   public static Object getSTrendRatio(String date, int distance, int duration,
           ConcurrentHashMap<String, Object[]> rawDataMap) {
-    LocalDate target_date = MyUtils.getUsableDate(date, rawDataMap, distance, 0, true);
+    LocalDate target_date = MyUtils
+            .getUsableDate(date, rawDataMap, distance, 0, true);
     if (target_date == null) {
       return "?";
     }
-    Double base = (Double) rawDataMap.get(date)[GConfigs.YAHOO_DATA_INDEX.CLOSE.ordinal()];
-    Double target_avg = getAverage(target_date.toString(), duration, rawDataMap);
+    Double base = (Double) rawDataMap
+            .get(date)[GConfigs.YAHOO_DATA_INDEX.CLOSE.ordinal()];
+    Double target_avg
+            = getAverage(target_date.toString(), duration, rawDataMap);
 
     if (base == null || target_avg == null) {
       return "?";
     }
 
-    return (target_avg - base) / base * 5;
+    return (target_avg - base) / base;
   }
 
   private static Double getAverage(String date, int duration,

@@ -11,7 +11,6 @@ import java.time.LocalDate;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,6 +33,7 @@ import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.Filter;
+import weka.filters.unsupervised.instance.RemoveMisclassified;
 
 public class WekaModelBenchamrker {
 
@@ -41,13 +41,16 @@ public class WekaModelBenchamrker {
   private final int m_DaysForEval = 60;
 
   // Classifier Name -> ArrayList<[fp,fr,mae]>
-  private final ConcurrentHashMap<String, ConcurrentHashMap> m_Evals = new ConcurrentHashMap();
+  private final ConcurrentHashMap<String, ConcurrentHashMap> m_Evals
+          = new ConcurrentHashMap();
 
   public WekaModelBenchamrker(String modelType) {
     m_TypePath = modelType + "//";
   }
 
-  public void benchmarkByClasses(String code, ArrayList<String> classifierNames, ArrayList<String[]> optionsList, ArrayList<String> notes) throws IOException {
+  public void benchmarkByClasses(String code, ArrayList<String> classifierNames,
+          ArrayList<String[]> optionsList, ArrayList<String> notes)
+          throws IOException {
 
     Instances raw_data = MyUtils.loadInstancesFromCSV(GConfigs.RESOURCE_PATH
             + this.m_TypePath + code + "//" + code + "_Training.csv");
@@ -61,21 +64,22 @@ public class WekaModelBenchamrker {
         Instances data_with_one_class
                 = removeUnwantedClassAtt(new Instances(raw_data), i);
         //data_with_one_class=interquartileRange(data_with_one_class);
+
         ReliefFAttributeEval relf = new ReliefFAttributeEval();
         relf.setOptions(new String[]{"-M", "50"});
-        benchMarkModels("Relf",
-                selectAttributes(new Instances(data_with_one_class), relf),
+        Instances selected = selectAttributes(new Instances(data_with_one_class), relf);
+        benchMarkModels("Relf", filterByClassifier(selected),
                 code, classifierNames, optionsList, notes, i);
 
-        CorrelationAttributeEval corrlat = new CorrelationAttributeEval();
-        benchMarkModels("Corrlat",
-                selectAttributes(new Instances(data_with_one_class), corrlat),
-                code, classifierNames, optionsList, notes, i);
+//        CorrelationAttributeEval corrlat = new CorrelationAttributeEval();
+//        selected = selectAttributes(new Instances(data_with_one_class), corrlat);
+//        benchMarkModels("Corrlat", filterByClassifier(selected),
+//                code, classifierNames, optionsList, notes, i);
 
-        benchMarkModels("Relf-Sec",
-                selectUnfavoredAttributes(code + "_" + i, new Instances(data_with_one_class)),
-                code, classifierNames, optionsList, notes, i);
-
+//        benchMarkModels("Relf-Sec",
+//                selectUnfavoredAttributes(code + "_" + i,
+//                        new Instances(data_with_one_class)),
+//                code, classifierNames, optionsList, notes, i);
       } catch (Exception ex) {
         Logger.getLogger(WekaModelBenchamrker.class.getName()).
                 log(Level.SEVERE, ex.getMessage(), ex);
@@ -113,8 +117,16 @@ public class WekaModelBenchamrker {
 
       //If the class attribute is numeric but the classifier is unable to handle numeric class
       // discretize the class attribute
-      if (!classifier.getCapabilities().handles(Capabilities.Capability.NUMERIC_CLASS)) {
+      if (!classifier.getCapabilities()
+              .handles(Capabilities.Capability.NUMERIC_CLASS)) {
         instances = discretizeClassAtt(instances);
+      }
+
+      //Skip if the classifier cannot handle nominal class value
+      if (instances.classAttribute().isNominal()) {
+        if (!classifier.getCapabilities().handles(Capabilities.Capability.NOMINAL_CLASS)) {
+          continue;
+        }
       }
 //      else if (classifier_name.contains("MultilayerPerceptron")
 //              || classifier_name.contains("RandomForest")
@@ -129,7 +141,7 @@ public class WekaModelBenchamrker {
 //      System.out.println("False positive:" + eval_result[1]);
 //      System.out.println("Random rate:" + eval_result[2]);
 
-      if (eval_result[1] - eval_result[2] >= 0.15 && eval_result[1] > 0) {
+      if (/*eval_result[1] - eval_result[2] >= 0.15 &&*/eval_result[1] > 0) {
         MyUtils.saveModelAndPerformance(code, identity, m_TypePath,
                 classifier, instances.stringFreeStructure(), eval_result);
       }
@@ -147,7 +159,7 @@ public class WekaModelBenchamrker {
         if (e.getKey().equals(class_name)) {
           found = true;
           ArrayList a = (ArrayList) e.getValue();
-          if (eval_result[1] - eval_result[2] >= 0.15) {
+          if (/*eval_result[1] - eval_result[2] >= 0.15*/eval_result[1] > 0) {
             a.add(eval_result);
           }
         }
@@ -163,10 +175,12 @@ public class WekaModelBenchamrker {
      // evals.put(classifier_name, list);
 
       // Series forecasting
-      classifier = AbstractClassifier.forName(classifierNames.get(i), optionsList.get(i).clone());
+      classifier = AbstractClassifier.forName(classifierNames.get(i),
+              optionsList.get(i).clone());
       //Skip if this classified only handles nominal value
       // as the forecaster does not support nominal forecasting
-      if (!classifier.getCapabilities().handles(Capabilities.Capability.NUMERIC_CLASS)) {
+      if (!classifier.getCapabilities()
+              .handles(Capabilities.Capability.NUMERIC_CLASS)) {
         continue;
       }
 //      eval_result = evaluateForecaster(classifier, class_name, new Instances(instances), days_to_advance);
@@ -204,7 +218,16 @@ public class WekaModelBenchamrker {
     return trainInstances;
   }
 
-  private Instances selectAttributes(Instances originalData, ASEvaluation evaluator) throws Exception {
+  private Instances filterByClassifier(Instances data) throws Exception {
+    RemoveMisclassified filter_by_classifier = new RemoveMisclassified();
+    filter_by_classifier.setOptions(new String[]{"-W", "weka.classifiers.trees.RandomForest -I 100"});
+    filter_by_classifier.setInputFormat(data);
+    return Filter.useFilter(data, filter_by_classifier);
+  }
+
+  private Instances selectAttributes(Instances originalData,
+          ASEvaluation evaluator)
+          throws Exception {
     if (!evaluator.getCapabilities().handles(Capabilities.Capability.NUMERIC_CLASS)) {
       originalData = discretizeClassAtt(originalData);
     }
@@ -218,7 +241,8 @@ public class WekaModelBenchamrker {
     return selection.reduceDimensionality(originalData);
   }
 
-  private Instances selectUnfavoredAttributes(String tittle, Instances originalData) throws Exception {
+  private Instances selectUnfavoredAttributes(String tittle,
+          Instances originalData) throws Exception {
     AttributeSelection selection = new AttributeSelection();
     Ranker ranker = new Ranker();
     ranker.setOptions(new String[]{"-N", "20"});
@@ -259,19 +283,21 @@ public class WekaModelBenchamrker {
   }
 
   private Instances discretizeClassAtt(Instances instances) throws Exception {
-    weka.filters.unsupervised.attribute.Discretize disc = new weka.filters.unsupervised.attribute.Discretize();
+    weka.filters.unsupervised.attribute.Discretize disc
+            = new weka.filters.unsupervised.attribute.Discretize();
     disc.setAttributeIndices("last");
     disc.setIgnoreClass(true);
-    disc.setUseEqualFrequency(true);
+    //disc.setUseEqualFrequency(true);
     disc.setInputFormat(instances);
     return Filter.useFilter(instances, disc);
   }
 
   private Instances discretizeTrainingAtt(Instances instances) throws Exception {
-    weka.filters.unsupervised.attribute.Discretize disc = new weka.filters.unsupervised.attribute.Discretize();
+    weka.filters.unsupervised.attribute.Discretize disc
+            = new weka.filters.unsupervised.attribute.Discretize();
     disc.setAttributeIndices("first-last");
     disc.setIgnoreClass(false);
-    disc.setUseEqualFrequency(true);
+    //disc.setUseEqualFrequency(true);
     disc.setInputFormat(instances);
     return Filter.useFilter(instances, disc);
   }
@@ -297,6 +323,7 @@ public class WekaModelBenchamrker {
     double random_true = 0;
     double random_count = 0;
     double[] errors = new double[m_DaysForEval];
+    int error_count = 0;
     double threshold = determineEvaluationThreshold(originalData, daysToAdvance);
     Attribute class_att = originalData.classAttribute();
     //double sig = GConfigs.getSignificanceNormal(m_TypePath);
@@ -321,65 +348,66 @@ public class WekaModelBenchamrker {
         } else {
           buffer--;
         }
-        double fr = (double) tclassifier.classifyInstance(originalData.get(size + daysToAdvance - c));
+        double fr = (double) tclassifier.classifyInstance(originalData
+                .get(size + daysToAdvance - c));
         double av = (double) originalData.get(size + daysToAdvance - c).classValue();
 
         if (class_att.name().contains("Signal")) {
+
+          if (class_att.isNominal()) {
+            av = MyUtils.NomValueToNum(class_att.value((int) av));
+            fr = MyUtils.NomValueToNum(class_att.value((int) fr));
+          }
+
           // Signals are always positive
-          if (class_att.isNumeric()) {
-            if (fr >= 0.005) {
-              positive_count++;
-              if (av >= 0.005) {
-                true_positive++;
-              }
-            }
-            if (ThreadLocalRandom.current().nextBoolean()) {
-              random_count++;
-              if (av >= 0.005) {
-                random_true++;
-              }
-            }
-
-          } else {
-            if (fr != 0) {
-              positive_count++;
-              if (fr == av) {
-                true_positive++;
-              }
-            }
-
-            int ran = ThreadLocalRandom.current().nextInt(2);
-            if (ran != 0) {
-              random_count++;
-              if (av == ran) {
-                random_true++;
-              }
+          if (fr >= threshold) {
+            positive_count++;
+            if (av >= threshold) {
+              true_positive++;
+            } else {
+              errors[i] = Math.abs(av - fr);
+              error_count++;
             }
           }
-        } else {
-
-          if (class_att.isNumeric()) {
-            // If |av|<|t| && |fr|>|t|
-            if (Math.abs(fr) >= Math.abs(threshold)) {
-              positive_count++;
-              if (Math.abs(av) >= threshold) {
-                true_positive++;
-              }
+          if (ThreadLocalRandom.current().nextBoolean()) {
+            random_count++;
+            if (av >= threshold) {
+              random_true++;
             }
-            // Count for random rate, 50% change for random to be greater than threshold
-            if (ThreadLocalRandom.current().nextBoolean()) {
-              random_count++;
-              if (Math.abs(fr) >= threshold) {
-                random_true++;
-              }
+          }
+
+        } else  if (class_att.name().contains("Stable")){
+
+          if (class_att.isNominal()) {
+            av = MyUtils.NomValueToNum(class_att.value((int) av));
+            fr = MyUtils.NomValueToNum(class_att.value((int) fr));
+          }
+
+          // If |av|<|t| && |fr|>|t|
+          if (Math.abs(fr) >= Math.abs(threshold)) {
+            positive_count++;
+            if (fr > 0 && av >= threshold) {
+              true_positive++;
+            } else if (fr < 0 && av <= threshold * -1) {
+              true_positive++;
+            } else {
+              errors[i] = Math.abs(av - fr);
+              error_count++;
+            }
+          }
+          // Count for random rate, 50% change for random to be greater than threshold
+          int r;
+          if ((r = ThreadLocalRandom.current().nextInt(3)) != 0) {
+            random_count++;
+            if (r == 1 && av >= threshold) {
+              random_true++;
+            } else if (r == 2 && av <= threshold * -1) {
+              random_true++;
             }
 
-          } else {
-
-            break;
           }
         }
-        errors[i] = Math.abs(av) - Math.abs(fr);
+
         i++;
         //System.out.println("fr=" + fr + ", av=" + av);
       }
@@ -399,10 +427,10 @@ public class WekaModelBenchamrker {
 
     double sum = 0;
     for (double i : errors) {
-      sum += Math.abs(i);
+      sum += i;
     }
     double[] eval = new double[5];
-    eval[0] = sum / errors.length;
+    eval[0] = sum / error_count;
     eval[1] = true_positive;
     eval[2] = random_true;
 
@@ -410,7 +438,7 @@ public class WekaModelBenchamrker {
   }
 
   private double[] evaluateForecaster(Classifier classifier,
-          String class_name, Instances originalData, int daysToAdvance) 
+          String class_name, Instances originalData, int daysToAdvance)
           throws Exception {
     int size = originalData.size() - 1;
     double false_positive = 0;
@@ -492,25 +520,28 @@ public class WekaModelBenchamrker {
 
     //Check if the class att nominal or numeric, if nominal:
     Attribute class_att = originalData.classAttribute();
-    if (class_att.isNominal()) {
-      int m2 = (int) (sig / 0.01);
-      //Check class attribute's each value tag, find the one contains
-      //"-inf-0.5*0.01" or "-0.5*0.01-0.5*0.01" or "-0.5*0.01-inf"
-      String tmpstr;
-      Enumeration<?> enm = class_att.enumerateValues();
-      while (enm.hasMoreElements()) {
-        tmpstr = enm.nextElement().toString();
-        if (tmpstr.contains("-inf-0.005") || tmpstr.contains("-0.005-inf")
-                || tmpstr.contains("-0.005-0.005")) {
-          if (class_att.name().contains("Highest")) {
-            return Math.min(class_att.indexOfValue(tmpstr) + multi,
-                    class_att.numValues() - 1);
-          } else {
-            return Math.max(0, class_att.indexOfValue(tmpstr) - multi);
-          }
-        }
-      }
+    if (class_att.name().contains("Signal")) {
+      return 0.005;
     }
+//    if (class_att.isNominal()) {
+//      int m2 = (int) (sig / 0.01);
+//      //Check class attribute's each value tag, find the one contains
+//      //"-inf-0.5*0.01" or "-0.5*0.01-0.5*0.01" or "-0.5*0.01-inf"
+//      String tmpstr;
+//      Enumeration<?> enm = class_att.enumerateValues();
+//      while (enm.hasMoreElements()) {
+//        tmpstr = enm.nextElement().toString();
+//        if (tmpstr.contains("-inf-0.005") || tmpstr.contains("-0.005-inf")
+//                || tmpstr.contains("-0.005-0.005")) {
+//          if (class_att.name().contains("Highest")) {
+//            return Math.min(class_att.indexOfValue(tmpstr) + multi,
+//                    class_att.numValues() - 1);
+//          } else {
+//            return Math.max(0, class_att.indexOfValue(tmpstr) - multi);
+//          }
+//        }
+//      }
+//    }
     //if numeric 
     return sig;
   }
@@ -537,11 +568,16 @@ public class WekaModelBenchamrker {
 
     try (PrintWriter writer = new PrintWriter(new BufferedWriter(
             new FileWriter(file, true)))) {
-      writer.println("Class Value:,C_Highest05d,,,C_Highest10d,,,C_Highest15d,,,C_Highest20d,,,C_Highest25d");
-      writer.println("Classifier Name,False Positive,False Random,MAE,False Positive,False Random,MAE,False Positive,False Random,MAE,False Positive,False Random,MAE,False Positive,False Random,MAE");
+      writer.println("Class Value:,C_Highest05d,,,C_Highest10d"
+              + ",,,C_Highest15d,,,C_Highest20d,,,C_Highest25d");
+      writer.println("Classifier Name,False Positive,False Random"
+              + ",MAE,False Positive,False Random,MAE,False Positive"
+              + ",False Random,MAE,False Positive,False Random"
+              + ",MAE,False Positive,False Random,MAE");
       for (Entry e2 : map.entrySet()) {
         String classifier_name = (String) e2.getKey();
-        ArrayList<AbstractMap.SimpleEntry> list = (ArrayList<AbstractMap.SimpleEntry>) e2.getValue();
+        ArrayList<AbstractMap.SimpleEntry> list
+                = (ArrayList<AbstractMap.SimpleEntry>) e2.getValue();
         writer.print(classifier_name + ",");
         for (AbstractMap.SimpleEntry ent : list) {
           ArrayList a = (ArrayList) ent.getValue();
@@ -552,7 +588,9 @@ public class WekaModelBenchamrker {
               es[j] += os[j];
             }
           }
-          writer.print(roundDouble(es[1] / (a.size() - 1)) + "," + roundDouble(es[2] / (a.size() - 1)) + "," + roundDouble(es[0] / (a.size() - 1)) + ",");
+          writer.print(roundDouble(es[1] / (a.size() - 1)) + ","
+                  + roundDouble(es[2] / (a.size() - 1)) + ","
+                  + roundDouble(es[0] / (a.size() - 1)) + ",");
 
         }
         writer.println();

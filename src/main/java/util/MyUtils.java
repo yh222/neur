@@ -55,9 +55,9 @@ public class MyUtils {
       count = Math.abs(duration - distance);
     }
 
-    int buffer = (int) ((duration + distance) * 0.6) + 10;
+    int buffer = (int) ((duration + Math.abs(distance)) * 0.6) + 10;
     tempdate = tempdate.plusDays(direction);
-    
+
     for (int i = 0; i <= count; i++) {
       if (buffer < 0) {
         break;
@@ -143,6 +143,30 @@ public class MyUtils {
     defaultFormat.setMinimumFractionDigits(3);
     defaultFormat.setMaximumFractionDigits(3);
     return defaultFormat.format(in);
+  }
+
+  public static double NomValueToNum(String nom) {
+    Pattern ptn = Pattern.compile("-?(\\d)+\\.(\\d)+");
+    Matcher m = ptn.matcher(nom);
+    m.find();
+    double first = Double.parseDouble(m.group(0));
+    if (nom.contains("-inf")) {
+      if (first < 0) {
+        return first * 1.5;
+      } else {
+        return first * 0.5;
+      }
+    } else if (nom.contains("inf")) {
+      if (first > 0) {
+        return first * 1.5;
+      } else {
+        return first * 0.5;
+      }
+    }
+
+    m.find();
+    double second = Double.parseDouble(m.group(0));
+    return (first + second) / 2;
   }
 
   public static LocalDate getLastDateFromFile(File file) {

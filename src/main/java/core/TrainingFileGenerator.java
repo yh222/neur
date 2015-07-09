@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import datapreparer.RawDataLoader;
+import static datapreparer.SectorTrainingDataMerger.mergeTrainingDataByIndustry;
 import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -207,5 +208,6 @@ public class TrainingFileGenerator {
 //    tdg.generateTrainingData(MODEL_TYPES.FX.name(), true);
     TrainingFileGenerator tdg = new TrainingFileGenerator(MODEL_TYPES.STK.name());
     tdg.generateTrainingData(MODEL_TYPES.STK.name(), true);
+    mergeTrainingDataByIndustry();
   }
 }

@@ -20,7 +20,7 @@ public class GConfigs {
 
   //Default start date for data download
   public static final String DEFAULT_START_DATE = "2013-01-01";
-  public static final String END_DATE = "2015-05-19";
+  public static final String END_DATE ="2015-05-19";
 
   // Global Value:  project path
   public static final String DEFAULT_PATH = "D:\\Documents\\ProjectSPAData\\";

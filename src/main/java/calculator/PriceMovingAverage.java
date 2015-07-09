@@ -162,7 +162,7 @@ public class PriceMovingAverage {
     LocalDate start_date = StatCalculator.getFirstValidDate(rawDataMap);
     Object[] raw_data = rawDataMap.get(start_date.toString());
     if (raw_data == null) {
-      System.err.println("Cannot find first valid date");
+      System.err.println("MA Cannot find first valid date");
       return;
     }
 

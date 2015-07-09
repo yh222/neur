@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -39,7 +40,7 @@ public class AccessDB {
             ind2 = (String) queryTable(industry, row.getInt("Industry2"), "Cname");
           }
 
-          m_Tags.add(new Tag(row.getString("Tag"), c, ind, ind2,row.getInt("MarketCap")));
+          m_Tags.add(new Tag(row.getString("Tag"), c, ind, ind2, row.getInt("MarketCap")));
         }
 
         //Skip empty subcats
@@ -79,7 +80,23 @@ public class AccessDB {
     return l;
   }
 
-  public static ArrayList<String> queryTagsByIndustry(String ind) {
+  public static Set<String> loadIndustries() {
+    InitDB();
+    Set<String> r=m_SubToCat.keySet();
+    r.remove("");
+    return r;
+  }
+
+//  public static Tag findTag(String code) {
+//    for (Tag t : m_Tags) {
+//      if (t.m_Name.equals(code)) {
+//        return t;
+//      }
+//    }
+//    return null;
+//  }
+
+  public static ArrayList<Tag> queryTagsByIndustry(String ind) {
     ArrayList l = new ArrayList();
     for (Tag t : m_Tags) {
       if (t.m_Industry.equals(ind) || t.m_Industry2.equals(ind)) {
@@ -89,7 +106,7 @@ public class AccessDB {
     return l;
   }
 
-  public static ArrayList<String> queryTagsByIndustryGroup(String grp) {
+  public static ArrayList<Tag> queryTagsByIndustryGroup(String grp) {
     ArrayList l = new ArrayList();
     for (Tag t : m_Tags) {
       if (m_SubToCat.get(t.m_Industry).equals(grp)
@@ -100,7 +117,7 @@ public class AccessDB {
     return l;
   }
 
-  public static ArrayList<String> queryTagsBySector(String sec) {
+  public static ArrayList<Tag> queryTagsBySector(String sec) {
     ArrayList l = new ArrayList();
     for (Tag t : m_Tags) {
       if (m_CatToSector.get(m_SubToCat.get(t.m_Industry)).equals(sec)
@@ -113,9 +130,10 @@ public class AccessDB {
 
   //Test
   public static void main(String[] args) {
-    ArrayList<String> l = loadSTKCodes();
+    ArrayList<Tag> l = null;
     l = queryTagsByIndustryGroup("Technology");
     l = queryTagsBySector("FINANCIALS");
+    Set s = loadIndustries();
     l = null;
   }
 

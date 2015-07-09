@@ -171,7 +171,7 @@ public class StatCalculator {
     LocalDate start_date = parseToISO(DEFAULT_START_DATE);
     //Keep looping until a valid date is found
     Object[] raw_data;
-    for (int i = 999; i > 0; i--) {
+    for (int i = 9999; i > 0; i--) {
       raw_data = rawDataMap.get(start_date.toString());
       if (raw_data != null) {
         break;

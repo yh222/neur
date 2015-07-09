@@ -1,15 +1,11 @@
 package util;
 
-/**
- *
- * @author Yichen
- */
-class Tag {
+public class Tag {
 
-  String m_Name;
-  String m_Country;
-  String m_Industry;
-  String m_Industry2;
+  public String m_Name;
+  public String m_Country;
+  public String m_Industry;
+  public String m_Industry2;
   double m_MktCap;
 
   Tag(String name, String country, String industry, String industry2, double mktCap) {

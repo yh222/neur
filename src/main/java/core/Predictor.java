@@ -13,14 +13,11 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
-import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import util.MyUtils;
 import static util.MyUtils.roundDouble;
 import weka.classifiers.Classifier;
@@ -138,6 +135,7 @@ public class Predictor {
         String identity = p.getKey();
         double result;
         double[] evaluations = (double[]) p.getValue()[1];
+        double mae = evaluations[0];
         double true_positive = evaluations[1];
         double true_random = evaluations[2];
         Instances train_header = (Instances) p.getValue()[2];
@@ -163,29 +161,17 @@ public class Predictor {
 
         if (class_attribute.isNominal()) {//If this is a nominal class
           writer.println(class_name + "," + class_attribute.value((int) result)
-                  + "," + roundDouble(true_positive) + "," + roundDouble(true_random) + "," + identity.substring(0, identity.indexOf("-")));
-          Scanner st = new Scanner(class_attribute.value((int) result));
-          Pattern ptn = Pattern.compile("(\\d)+\\.(\\d)+");
-          Matcher m = ptn.matcher(class_attribute.value((int) result));
-          m.find();
-          if (class_attribute.value((int) result).contains("inf")) {
-            result = Double.parseDouble(m.group(0));
-          } else {
-            double first = Double.parseDouble(m.group(0));
-            m.find();
-            result = (first + Double.parseDouble(m.group(0))) / 2;
-          }
-          if (class_name.contains("Lowest")) {
-            result *= -1;
-          }
-
+                  + "," + roundDouble(true_positive) + ","
+                  + roundDouble(true_random) + "," + roundDouble(mae) + "," + identity);
+          result = MyUtils.NomValueToNum(class_attribute.value((int) result));
         } else {//If this is a numeric class
           writer.println(class_name + "," + roundDouble(result)
-                  + "," + roundDouble(true_positive) + "," + roundDouble(true_random) + "," + identity);
+                  + "," + roundDouble(true_positive) + ","
+                  + roundDouble(true_random) + "," + roundDouble(mae) + "," + identity);
         }
 
         double sig = GConfigs.getSignificanceNormal(this.m_TypePath, MyUtils.getDaysToAdvance(class_name));
-        if ((true_positive-true_random >=0.15) && Math.abs(result) >= sig) {
+        if (Math.abs(result) >= sig) {
           if (!notables_local.containsKey(class_name)) {
             notables_local.put(class_name, new ArrayList());
           }
