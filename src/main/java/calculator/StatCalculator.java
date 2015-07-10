@@ -62,7 +62,7 @@ public class StatCalculator {
     if (start_date == null || end_date == null) {
       return null;
     }
-    double start_price= (double) rawDataMap.get(start_date.toString())[YAHOO_DATA_INDEX.CLOSE.ordinal()];
+    double start_price = (double) rawDataMap.get(start_date.toString())[YAHOO_DATA_INDEX.CLOSE.ordinal()];
 
     double max = Double.NEGATIVE_INFINITY;
     double min = Double.POSITIVE_INFINITY;
@@ -154,7 +154,7 @@ public class StatCalculator {
       LocalDate tempDate;
       long min = Long.MAX_VALUE, diff;
       for (String[] array : dividendData) {
-        tempDate =parseToISO(array[0]);
+        tempDate = parseToISO(array[0]);
         diff = tempDate.compareTo(inputDate);
         if (diff > 0 && diff < min && diff < 120) {
           min = diff;
@@ -209,13 +209,11 @@ public class StatCalculator {
     LocalDate start_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, true);
     LocalDate end_date = MyUtils.getUsableDate(date, rawDataMap, distance, duration, false);
 
-    LocalDate input_date = MyUtils.getUsableDate(date, rawDataMap, 0, 0, false);
-
-    if (start_date == null || end_date == null || input_date == null) {
+    if (start_date == null || end_date == null) {
       return "?";
     }
 
-    double last_price = (double) rawDataMap.get(input_date.toString())[YAHOO_DATA_INDEX.CLOSE.ordinal()];
+    double last_price = (double) rawDataMap.get(date)[YAHOO_DATA_INDEX.CLOSE.ordinal()];
 
     Random rdn = new Random();
     int count = 0;

@@ -8,6 +8,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.LocalDate;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Set;
@@ -19,10 +20,11 @@ import util.MyUtils;
 import util.Tag;
 
 public class SectorTrainingDataMerger {
-
+  
   private static final String m_LocalPath = GConfigs.RESOURCE_PATH + "STK\\_Sectors\\";
   private static final String m_CSVPath = GConfigs.RESOURCE_PATH + "STK\\";
-
+  private static final LocalDate m_DateLimit = MyUtils.parseToISO("2005-01-01");
+  
   public static void mergeTrainingDataByIndustry() {
     MyUtils.findOrCreateFolder(m_LocalPath);
     Set<String> industries = AccessDB.loadIndustries();
@@ -43,7 +45,9 @@ public class SectorTrainingDataMerger {
             if (s1.equals("N_Date")) {
               header = line;
             } else {
-              sorted_set.add(new SimpleEntry(s1 + t.m_Name, line));
+              if (MyUtils.parseToISO(s1).isAfter(m_DateLimit)) {
+                sorted_set.add(new SimpleEntry(s1 + t.m_Name, line));
+              }
             }
           }
         } catch (Exception ex) {
@@ -51,7 +55,7 @@ public class SectorTrainingDataMerger {
                   .log(Level.SEVERE, "Error when loading csv file for raw data.", ex);
         }
       }
-
+      
       try (PrintWriter writer = new PrintWriter(new BufferedWriter(
               new FileWriter(m_LocalPath + industry + ".csv", false)))) {
         writer.println(header);

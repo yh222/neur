@@ -87,14 +87,14 @@ public class AccessDB {
     return r;
   }
 
-//  public static Tag findTag(String code) {
-//    for (Tag t : m_Tags) {
-//      if (t.m_Name.equals(code)) {
-//        return t;
-//      }
-//    }
-//    return null;
-//  }
+  public static Tag findTag(String code) {
+    for (Tag t : m_Tags) {
+      if (t.m_Name.equals(code)) {
+        return t;
+      }
+    }
+    return null;
+  }
 
   public static ArrayList<Tag> queryTagsByIndustry(String ind) {
     ArrayList l = new ArrayList();
