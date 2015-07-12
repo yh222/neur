@@ -101,7 +101,7 @@ public class GConfigs {
     if (type.contains(MODEL_TYPES.FX.name())) {
       return 0.004;
     } else {
-      int multi = 1;
+      int multi = 2;
       if (daysAdv > 5 && daysAdv <= 20) {
         multi = 2;
       } else if (daysAdv > 20) {

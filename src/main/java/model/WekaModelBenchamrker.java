@@ -14,13 +14,14 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import util.AccessDB;
 import util.MyUtils;
 import static util.MyUtils.roundDouble;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.evaluation.Evaluation;
+import weka.classifiers.trees.RandomForest;
 import weka.core.Capabilities;
+import weka.core.Instance;
 import weka.core.Instances;
 
 public class WekaModelBenchamrker {
@@ -44,19 +45,6 @@ public class WekaModelBenchamrker {
     //Delete date
     raw_data.deleteAttributeAt(0);
 
-    boolean use_industry = false;
-    Instances industry_data = null;
-    if (m_TypePath.contains(GConfigs.MODEL_TYPES.STK.name())) {
-      String industry = AccessDB.findTag(code).m_Industry;
-      int sibling_counts = AccessDB.queryTagsByIndustry(industry).size();
-      use_industry = sibling_counts > 1;
-      if (use_industry) {
-        industry_data = MyUtils.loadInstancesFromCSV(
-                GConfigs.RESOURCE_PATH + "STK\\_Sectors\\" + industry + ".csv");
-        industry_data.deleteAttributeAt(0);
-      }
-    }
-
     m_Evals.put(code, new ConcurrentHashMap());
     //raw_data=weightDataByDate(raw_data);
     for (int i = 0; i < GConfigs.getClassCount(m_TypePath); i++) {
@@ -67,12 +55,6 @@ public class WekaModelBenchamrker {
         benchMarkModels("Relf", prepared_data, prepared_data,
                 code, classifierNames, optionsList, notes, i);
 
-        if (use_industry) {
-          Instances prepared_industry_data
-                  = Filters.prepareInstances(new Instances(industry_data), i, m_TypePath);
-          benchMarkModels("Indu", prepared_industry_data, prepared_data,
-                  code, classifierNames, optionsList, notes, i);
-        }
 //        CorrelationAttributeEval corrlat = new CorrelationAttributeEval();
 //        selected = selectAttributes(new Instances(data_with_one_class), corrlat);
 //        benchMarkModels("Corrlat", filterByClassifier(selected),
@@ -83,10 +65,10 @@ public class WekaModelBenchamrker {
 //                code, classifierNames, optionsList, notes, i);
       } catch (Exception ex) {
         Logger.getLogger(WekaModelBenchamrker.class.getName()).
-                log(Level.SEVERE, ex.getMessage(), ex);
+                log(Level.SEVERE, ex.getMessage() + ", " + code, ex);
       }
     }
-    writeToFile(code);
+    writeToFile(code, raw_data);
   }
 
   //Class index is the relative index of class value, cannot be used directly in datasource
@@ -138,19 +120,19 @@ public class WekaModelBenchamrker {
 //              || classifier_name.contains("HoeffdingTree")) {
 //        instances = discretizeInstances(instances);
 //      }
-      int sibling_counts = 1;
-      if (additionInfo.contains("Indu")) {
-        String industry = AccessDB.findTag(code).m_Industry;
-        sibling_counts = AccessDB.queryTagsByIndustry(industry).size();
-      }
-
+      Instances assistance_data = new Instances(evaluating.stringFreeStructure());
       eval_result = Evaluator.evalClassifier(code, classifier,
               new Instances(training), new Instances(evaluating),
-              days_to_advance, sibling_counts, m_TypePath);
+              assistance_data, days_to_advance, m_TypePath);
       if (/*eval_result[1] - eval_result[2] >= 0.15 &&*/eval_result[1] > 0) {
+        Classifier noise_classifier = new RandomForest();
+        noise_classifier.buildClassifier(assistance_data);
+        //training = purnTraining(training, noise_classifier);
         classifier.buildClassifier(training);
+
         MyUtils.saveModelAndPerformance(code, identity, m_TypePath,
                 classifier, training.stringFreeStructure(), eval_result);
+        MyUtils.saveAssistanceModel(code, identity, m_TypePath, noise_classifier);
       }
       updateEvaluationTable(code, classifier_name, class_name, eval_result);
 
@@ -186,15 +168,21 @@ public class WekaModelBenchamrker {
     return modelBenchMap;
   }
 
-  private void writeToFile(String code) {
+  private void writeToFile(String code, Instances rawData) {
     File file = new File(GConfigs.REPORT_PATH + "out\\6_" + code + ".csv");
 
     ConcurrentHashMap<String, ArrayList> map = m_Evals.get(code);
 
     try (PrintWriter writer = new PrintWriter(new BufferedWriter(
             new FileWriter(file, true)))) {
-      writer.println("Class Value:,C_Highest05d,,,C_Highest10d"
-              + ",,,C_Highest15d,,,C_Highest20d,,,C_Highest25d");
+      writer.print("Class Value:,");
+      int att_count = rawData.numAttributes();
+      int class_count = GConfigs.getClassCount(m_TypePath);
+      int training_count = att_count - class_count;
+      for (int i = 0; i < class_count; i++) {
+        writer.print(rawData.attribute(training_count + i).name() + ",,,");
+      }
+      writer.println();
       writer.println("Classifier Name,False Positive,False Random"
               + ",MAE,False Positive,False Random,MAE,False Positive"
               + ",False Random,MAE,False Positive,False Random"
@@ -259,6 +247,22 @@ public class WekaModelBenchamrker {
       }
       list.add(new AbstractMap.SimpleEntry(className, a));
     }
+  }
+
+  private Instances purnTraining(Instances training, Classifier noise_classifier) {
+    //Instances r = new Instances(training);
+    for (int i = 0; i < training.size(); i++) {
+      try {
+        Instance ins = training.get(i);
+        double c = noise_classifier.classifyInstance(ins);
+        if (c < 0.6) {
+          training.remove(i);
+        }
+      } catch (Exception ex) {
+        Logger.getLogger(WekaModelBenchamrker.class.getName()).log(Level.SEVERE, null, ex);
+      }
+    }
+    return training;
   }
 
 }

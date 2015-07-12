@@ -54,11 +54,12 @@ public class Predictor {
     File[] files = folder.listFiles();
     for (File file : files) {
       String fname = file.getName();
-      String classifier_id = fname.replaceAll(".model", "").replaceAll(".perf", "");
+      String classifier_id = fname.replaceAll(".amodel", "")
+              .replaceAll(".model", "");
 
       Object[] store = local_map.get(classifier_id);
       if (store == null) {
-        local_map.put(classifier_id, new Object[3]);
+        local_map.put(classifier_id, new Object[4]);
         store = local_map.get(classifier_id);
       }
 
@@ -71,7 +72,11 @@ public class Predictor {
         store[0] = classifier;
         store[1] = performance;
         store[2] = trainHeader;
+      } else if (fname.endsWith(".amodel")) {
+        Object assistance_classifier = objectInputStream.readObject();
+        store[3] = assistance_classifier;
       }
+      int jj = 0;
     }
     return local_map;
   }
@@ -127,6 +132,7 @@ public class Predictor {
 
     Instances inputValues = MyUtils.loadInstancesFromCSV(GConfigs.RESOURCE_PATH
             + this.m_TypePath + code + "//" + code + "_Training.csv");
+    inputValues.deleteAttributeAt(0);
 
     //System.out.println("Instrument: " + code);
     try (PrintWriter writer = new PrintWriter(new BufferedWriter(
@@ -134,6 +140,7 @@ public class Predictor {
       for (Entry<String, Object[]> p : loadModelsAndPerformances(code).entrySet()) {
         String identity = p.getKey();
         double result;
+        double confidence = 0;
         double[] evaluations = (double[]) p.getValue()[1];
         double mae = evaluations[0];
         double true_positive = evaluations[1];
@@ -149,29 +156,42 @@ public class Predictor {
           int days_to_advance = MyUtils.getDaysToAdvance(class_name);
           result = (double) forecaster.forecast(days_to_advance).get(0).get(0).predicted();
         } else {
-          Object o = p.getValue()[0];
+          Object model = p.getValue()[0];
           InputMappedClassifier classifier = new InputMappedClassifier();
-          classifier.setClassifier((Classifier) o);
+          classifier.setClassifier((Classifier) model);
           classifier.setModelHeader(train_header);
-          classifier.setTestStructure(inputValues);
+          //classifier.setTestStructure(inputValues);
           classifier.setSuppressMappingReport(true);
-          result = (double) classifier.classifyInstance(inputValues.get(inputValues.size() - 1));
 
+          Object a_model = p.getValue()[3];
+          InputMappedClassifier assistance_classifier = new InputMappedClassifier();
+          assistance_classifier.setClassifier((Classifier) a_model);
+          assistance_classifier.setModelHeader(train_header);
+          //assistance_classifier.setTestStructure(inputValues);
+          assistance_classifier.setSuppressMappingReport(true);
+
+          result = (double) classifier
+                  .classifyInstance(inputValues.get(inputValues.size() - 1));
+          confidence = (double) assistance_classifier
+                  .classifyInstance(inputValues.get(inputValues.size() - 1));
+          evaluations[4] = confidence;
         }
 
         if (class_attribute.isNominal()) {//If this is a nominal class
           writer.println(class_name + "," + class_attribute.value((int) result)
+                  + "," + roundDouble(confidence)
                   + "," + roundDouble(true_positive) + ","
                   + roundDouble(true_random) + "," + roundDouble(mae) + "," + identity);
           result = MyUtils.NomValueToNum(class_attribute.value((int) result));
         } else {//If this is a numeric class
           writer.println(class_name + "," + roundDouble(result)
+                  + "," + roundDouble(confidence)
                   + "," + roundDouble(true_positive) + ","
                   + roundDouble(true_random) + "," + roundDouble(mae) + "," + identity);
         }
 
         double sig = GConfigs.getSignificanceNormal(this.m_TypePath, MyUtils.getDaysToAdvance(class_name));
-        if (Math.abs(result) >= sig) {
+        if (Math.abs(result) >= sig && confidence > 0) {
           if (!notables_local.containsKey(class_name)) {
             notables_local.put(class_name, new ArrayList());
           }
@@ -201,7 +221,8 @@ public class Predictor {
           for (Object[] oray : arr) {
             double[] evals = (double[]) oray[1];
             writer.println(roundDouble((double) oray[2]) + "," + roundDouble(evals[1])
-                    + "," + roundDouble(evals[2]) + "," + oray[0]);
+                    + "," + roundDouble(evals[2]) + ","
+                    + roundDouble(evals[4]) + "," + oray[0]);
           }
           //}
           if (header) {

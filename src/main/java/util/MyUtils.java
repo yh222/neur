@@ -16,6 +16,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import weka.classifiers.Classifier;
 import weka.core.Instances;
 import weka.core.converters.CSVLoader;
 
@@ -101,6 +102,19 @@ public class MyUtils {
       objectOutputStream.writeObject(classifier);
       objectOutputStream.writeObject(dataStructure);
       objectOutputStream.writeObject(evaluation);
+    } catch (Exception e) {
+      Logger.getLogger(MyUtils.class.getName()).log(Level.SEVERE, e.getMessage(), e);
+    }
+  }
+
+  public static void saveAssistanceModel(String code, String identity, String typePath, Classifier assistanceModel) {
+    String dir = MODEL_PATH + typePath + code + "//";
+    MyUtils.findOrCreateFolder(dir);
+    String fname = identity + ".amodel";
+    File file = new File(dir + fname);
+    try (ObjectOutputStream objectOutputStream
+            = new ObjectOutputStream(new FileOutputStream(file, false))) {
+      objectOutputStream.writeObject(assistanceModel);
     } catch (Exception e) {
       Logger.getLogger(MyUtils.class.getName()).log(Level.SEVERE, e.getMessage(), e);
     }
@@ -193,4 +207,5 @@ public class MyUtils {
     }
     return null;
   }
+
 }

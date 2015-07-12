@@ -64,7 +64,7 @@ public class ProjectSPA {
 //
 //    classifierNames.add("weka.classifiers.functions.MLPClassifier");
 //    optionsList.add(new String[]{"-N", "2", "-R", "0.01", "-O", "1.0E-6", "-P", "1", "-E", "1", "-S", "1"});
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 1; i++) {
 //      classifierNames.add("weka.classifiers.meta.RotationForest");
 //      optionsList.add(new String[]{"-G", "4", "-H", "3", "-P", "50", "-F", "weka.filters.unsupervised.attribute.PrincipalComponents -R 1.0 -A 5 -M -1", "-W", "weka.classifiers.rules.NNge", "--", "-G", "30", "-I", "5"});
 //      notes.add("");
@@ -74,16 +74,15 @@ public class ProjectSPA {
 //        "weka.classifiers.trees.RandomForest", "--", "-I", "100",
 //        "-depth", "10"});
 //      notes.add("");
-
 //      classifierNames.add("weka.classifiers.meta.LogitBoost");
 //      optionsList.add(new String[]{"-H", "0.1", "-I", "10", "-W",
 //        "weka.classifiers.trees.RandomForest", "--", "-I", "100",
 //        "-depth", "10"});
 //      notes.add("");
-
       classifierNames.add("weka.classifiers.trees.RandomForest");
       optionsList.add(new String[]{"-I", "100", "-depth", "10"});
-      notes.add("");
+      notes.add("1");
+
 //      classifierNames.add("weka.classifiers.rules.NNge");
 //      optionsList.add(new String[]{"-G", "10", "-I", "5"});
 //      notes.add("");
@@ -130,18 +129,18 @@ public class ProjectSPA {
     }
 
     //Do again
-    executor = Executors.newFixedThreadPool(6);
-    benchmarker = new WekaModelBenchamrker(MODEL_TYPES.STK.name());
-    MyUtils.deleteModelFolder(MODEL_TYPES.STK.name());
-    for (String i : instruments) {
-      Runnable worker = new ClassicifyThread(i,
-              classifierNames,
-              optionsList, notes, benchmarker);
-      executor.execute(worker);
-    }
-    executor.shutdown();
-    while (!executor.isTerminated()) {
-    }
+//    executor = Executors.newFixedThreadPool(6);
+//    benchmarker = new WekaModelBenchamrker(MODEL_TYPES.STK.name());
+//    MyUtils.deleteModelFolder(MODEL_TYPES.STK.name());
+//    for (String i : instruments) {
+//      Runnable worker = new ClassicifyThread(i,
+//              classifierNames,
+//              optionsList, notes, benchmarker);
+//      executor.execute(worker);
+//    }
+//    executor.shutdown();
+//    while (!executor.isTerminated()) {
+//    }
   }
 
 //  private static ArrayList<String[]> cloneList(ArrayList<String[]> list) {

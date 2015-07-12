@@ -113,10 +113,12 @@ public class STKClassValueMaker {
           HashMap<String, Object> storageRow) {
     storageRow.put(GConfigs.CLS + "Stable05d",
             StableTrend.getSTrendRatio(date, -6, 5, rawDataMap));
+    storageRow.put(GConfigs.CLS + "Stable11d",
+            StableTrend.getSTrendRatio(date, -11, 5, rawDataMap));
     storageRow.put(GConfigs.CLS + "Stable15d",
             StableTrend.getSTrendRatio(date, -16, 5, rawDataMap));
     storageRow.put(GConfigs.CLS + "Stable30d",
-            StableTrend.getSTrendRatio(date, -31, 10, rawDataMap));
+            StableTrend.getSTrendRatio(date, -31, 5, rawDataMap));
   }
 
   private void addSignals(String date,
